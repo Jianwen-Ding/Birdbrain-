@@ -17,17 +17,17 @@ struct CircleRenderer{
 };
 
 class CircleRenderBehavior : public ComponentReader<CircleRenderer>{
+
+public:
+    CircleRenderBehavior(std::shared_ptr<Scene> scene);
+
+private:
     // Caches transform
     void start(CircleRenderer* givenComp, EntityID givenEnt) override;
 
     // Draws the given circle based off of transform and color
     void update(CircleRenderer* givenComp, EntityID givenEnt) override;
     
-    // Passes itself into ECSManager
-    CircleRenderBehavior();
-
-    // Constructs an instance of the behvaior to pass into the ECSManager
-    // static CircleRenderBehavior base;
 };
 
 

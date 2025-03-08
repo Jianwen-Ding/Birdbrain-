@@ -8,7 +8,7 @@
 template<typename... ComponentTypes>
 struct SceneView
 {
-  SceneView(Scene& scene)  : pScene(&scene) 
+  SceneView(std::shared_ptr<Scene> scene)  : pScene(scene) 
   {
     if (sizeof...(ComponentTypes) == 0)
     {
@@ -25,28 +25,28 @@ struct SceneView
 
   struct Iterator
   {
-    Iterator(Scene* pScene, unsigned int index, ComponentMask mask, bool all) 
+    Iterator(std::shared_ptr<Scene> pScene, unsigned int index, ComponentMask mask, bool all) 
     : pScene(pScene), index(index), mask(mask), all(all) {}
 
     // give back the entityID we're currently at
     EntityID operator*() const{
-      return pScene->entities[index].id; 
+      return pScene->m_entities[index].m_id; 
     }
 
     // Compare two iterators
     bool operator==(const Iterator& other) const{
-      return index == other.index || index == pScene->entities.size();
+      return index == other.index || index == pScene->m_entities.size();
     }
     bool operator!=(const Iterator& other) const{
-      return index != other.index && index != pScene->entities.size();
+      return index != other.index && index != pScene->m_entities.size();
     }
 
     bool ValidIndex(){
       return
       // It's a valid entity ID
-      ECSConsts::IsEntityValid(pScene->entities[index].id) &&
+      ECSConsts::IsEntityValid(pScene->m_entities[index].m_id) &&
       // It has the correct component mask
-      (all || mask == (mask & pScene->entities[index].mask));
+      (all || mask == (mask & pScene->m_entities[index].m_mask));
     }
 
     // Move the iterator forward
@@ -54,11 +54,11 @@ struct SceneView
       do
       {
         index++;
-      } while (index < pScene->entities.size() && !ValidIndex());
+      } while (index < pScene->m_entities.size() && !ValidIndex());
       return *this;
     }
     unsigned int index;
-    Scene* pScene;
+    std::shared_ptr<Scene> pScene;
     ComponentMask mask;
     bool all{ false };
   };
@@ -66,9 +66,9 @@ struct SceneView
   // Give an iterator to the beginning of this view
   const Iterator begin() const{
     int firstIndex = 0;
-    while (firstIndex < pScene->entities.size() &&
-      (componentMask != (componentMask & pScene->entities[firstIndex].mask) 
-        || !ECSConsts::IsEntityValid(pScene->entities[firstIndex].id))) 
+    while (firstIndex < pScene->m_entities.size() &&
+      (componentMask != (componentMask & pScene->m_entities[firstIndex].m_mask) 
+        || !ECSConsts::IsEntityValid(pScene->m_entities[firstIndex].m_id))) 
     {
       firstIndex++;
     }
@@ -77,10 +77,10 @@ struct SceneView
 
   // Give an iterator to the end of this view 
   const Iterator end() const{
-    return Iterator(pScene, (unsigned int)(pScene->entities.size()), componentMask, all);
+    return Iterator(pScene, (unsigned int)(pScene->m_entities.size()), componentMask, all);
   }
 
-  Scene* pScene{ nullptr };
+  std::shared_ptr<Scene> pScene{ nullptr };
   ComponentMask componentMask;
   bool all{ false };
 };

@@ -51,7 +51,7 @@ class SfmlRenderWindow : public IRenderWindow {
 
         InputCycle pollEvent() override;
 
-        void renderScene(Scene& givenScene) override;
+        void renderScene(std::shared_ptr<Scene> givenScene) override;
 
         ~SfmlRenderWindow() override;
 

@@ -13,18 +13,16 @@ struct Rigidbody {
   float v_y{0.5};
 };
 
-// 
 class RigidBodyBehavior : public ComponentReader<Rigidbody>{
+
+  public:
+    RigidBodyBehavior(std::shared_ptr<Scene> scene);
+
+  private:
     // Caches transform
     void start(Rigidbody* givenComp, EntityID givenEnt) override;
 
     // Draws the given circle based off of transform and color
     void update(Rigidbody* givenComp, EntityID givenEnt) override;
-    
-    // Passes itself into ECSManager
-    RigidBodyBehavior();
-
-    // Constructs an instance of the behvaior to pass into the ECSManager
-    static RigidBodyBehavior base;
 };
 #endif

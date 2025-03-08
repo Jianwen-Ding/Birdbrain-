@@ -13,13 +13,13 @@
 // component pool.
 struct Scene {
   struct EntityEntry {
-    EntityID id;  // though redundent with index in vector, required
+    EntityID m_id;  // though redundent with index in vector, required
                   // for deleting entities,
-    ComponentMask mask;
+    ComponentMask m_mask;
   };
-  std::vector<EntityEntry> entities;
-  std::vector<ComponentPool*> componentPools;
-  std::vector<unsigned int> freeIndices;
+  std::vector<EntityEntry> m_entities;
+  std::vector<ComponentPool*> m_componentPools;
+  std::vector<unsigned int> m_freeIndices;
 
   // Adds a new entity to this vector of entities, and returns its
   // ID. Can only support 2^64 entities without ID conflicts.
@@ -33,13 +33,13 @@ struct Scene {
   template<typename T>
   void Remove(EntityID id){
     // ensures you're not accessing an entity that has been deleted
-    if (entities[ECSConsts::GetEntityIndex(id)].id != id) 
+    if (m_entities[ECSConsts::GetEntityIndex(id)].m_id != id) 
         return;
 
     int componentId = ECSConsts::GetId<T>();
     // Finds location of component data within the entity component pool and 
     // resets, thus removing the component from the entity
-    entities[ECSConsts::GetEntityIndex(id)].mask.reset(componentId);
+    m_entities[ECSConsts::GetEntityIndex(id)].m_mask.reset(componentId);
   }
 
   // Assigns the entity associated with the given entity ID in this
@@ -50,19 +50,19 @@ struct Scene {
   T* Assign(EntityID id){
     int componentId = ECSConsts::GetId<T>();
 
-    if (componentPools.size() <= componentId) // Not enough component pool
+    if (m_componentPools.size() <= componentId) // Not enough component pool
     {
-        componentPools.resize(componentId + 1, nullptr);
+      m_componentPools.resize(componentId + 1, nullptr);
     }
-    if (componentPools[componentId] == nullptr) // New component, make a new pool
+    if (m_componentPools[componentId] == nullptr) // New component, make a new pool
     {
-        componentPools[componentId] = new ComponentPool(sizeof(T));
+      m_componentPools[componentId] = new ComponentPool(sizeof(T));
     }
 
     // Looks up the component in the pool, and initializes it with placement new
-    T* pComponent = new (componentPools[componentId]->get(ECSConsts::GetEntityIndex(id))) T();
+    T* pComponent = new (m_componentPools[componentId]->get(ECSConsts::GetEntityIndex(id))) T();
 
-    entities[ECSConsts::GetEntityIndex(id)].mask.set(componentId);
+    m_entities[ECSConsts::GetEntityIndex(id)].m_mask.set(componentId);
     return pComponent;
   }
 
@@ -73,10 +73,10 @@ struct Scene {
   template<typename T>
   T* Get(EntityID id){
     int componentId = ECSConsts::GetId<T>();
-    if (!entities[ECSConsts::GetEntityIndex(id)].mask.test(componentId))
+    if (!m_entities[ECSConsts::GetEntityIndex(id)].m_mask.test(componentId))
         return nullptr;
 
-    T* pComponent = static_cast<T*>(componentPools[componentId]->get(ECSConsts::GetEntityIndex(id)));
+    T* pComponent = static_cast<T*>(m_componentPools[componentId]->get(ECSConsts::GetEntityIndex(id)));
     return pComponent;
   }
 };

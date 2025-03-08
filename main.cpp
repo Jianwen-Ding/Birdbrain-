@@ -43,15 +43,15 @@ int main() {
   SfmlRenderWindow window = SfmlRenderWindow::SfmlRenderWindowBuilder().build();
   srand (static_cast <unsigned> (time(0)));
   
-  Scene& scene = ECSManager::getScene();
+  std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
   // Instantiate all the balls.
   for (u32 i = 0; i < NUM_BALLS; i++)
   {
-    EntityID ball = scene.NewEntity();
-    CircleRenderer* pBallRender = scene.Assign<CircleRenderer>(ball);
-    TransformComponent* pBallTransform = scene.Assign<TransformComponent>(ball);
-    Rigidbody* pBallRb = scene.Assign<Rigidbody>(ball);
-    CircleCollider* pBallCC = scene.Assign<CircleCollider>(ball);
+    EntityID ball = scene->NewEntity();
+    CircleRenderer* pBallRender = scene->Assign<CircleRenderer>(ball);
+    TransformComponent* pBallTransform = scene->Assign<TransformComponent>(ball);
+    Rigidbody* pBallRb = scene->Assign<Rigidbody>(ball);
+    CircleCollider* pBallCC = scene->Assign<CircleCollider>(ball);
     float radius = BALL_RADIUS;
     
     pBallRender->renderColor = Color(255,255,255);
@@ -63,15 +63,21 @@ int main() {
     pBallTransform->radius = radius;
 
   }
-  ECSManager::start();
+  SceneManager sceneManager = SceneManager(scene);
+  sceneManager.insertReader<CircleColliderBehavior>();
+  sceneManager.insertReader<CircleRenderBehavior>();
+  sceneManager.insertReader<RigidBodyBehavior>();
   TimeManager::init();
 
+
+  sceneManager.start();
+  
   // run the program as long as the window is open
   while (window.isActive())
   {
     window.pollEvent();
 
-    ECSManager::update();
+    sceneManager.update();
     TimeManager::update();
 
     window.renderScene(scene);

@@ -1,27 +1,24 @@
 #include "Scene.hpp"
 
-EntityID Scene::NewEntity()
-{
+EntityID Scene::NewEntity() {
     // std::vector::size runs in constant time.
-    if (!freeIndices.empty())
-    {
-        unsigned int newIndex = freeIndices.back();
-        freeIndices.pop_back();
+    if (!m_freeIndices.empty()){
+        unsigned int newIndex = m_freeIndices.back();
+        m_freeIndices.pop_back();
         // Takes in index and incremented EntityVersion at that index
-        EntityID newID = ECSConsts::CreateEntityId(newIndex, ECSConsts::GetEntityVersion(entities[newIndex].id));
-        entities[newIndex].id = newID;
-        return entities[newIndex].id;
+        EntityID newID = ECSConsts::CreateEntityId(newIndex, ECSConsts::GetEntityVersion(m_entities[newIndex].m_id));
+        m_entities[newIndex].m_id = newID;
+        return m_entities[newIndex].m_id;
     }
-    entities.push_back({ ECSConsts::CreateEntityId((unsigned int)(entities.size()), 0), ComponentMask() });
-    return entities.back().id;
+    m_entities.push_back({ ECSConsts::CreateEntityId((unsigned int)(m_entities.size()), 0), ComponentMask() });
+    return m_entities.back().m_id;
 }
 
 // Removes a given entity from the scene and signals to the scene the free space that was left behind
-void Scene::DestroyEntity(EntityID id)
-{
+void Scene::DestroyEntity(EntityID id) {
     // Increments EntityVersion at the deleted index
     EntityID newID = ECSConsts::CreateEntityId((unsigned int)(-1), ECSConsts::GetEntityVersion(id) + 1);
-    entities[ECSConsts::GetEntityIndex(id)].id = newID;
-    entities[ECSConsts::GetEntityIndex(id)].mask.reset(); 
-    freeIndices.push_back(ECSConsts::GetEntityIndex(id));
+    m_entities[ECSConsts::GetEntityIndex(id)].m_id = newID;
+    m_entities[ECSConsts::GetEntityIndex(id)].m_mask.reset(); 
+    m_freeIndices.push_back(ECSConsts::GetEntityIndex(id));
 }

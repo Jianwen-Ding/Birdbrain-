@@ -1,14 +1,14 @@
 #include "CircleCollider.hpp"
 
 void CircleColliderBehavior::start(CircleCollider* givenComp, EntityID givenEnt) {
-    givenComp->transform = givenSceneView.pScene->Get<TransformComponent>(givenEnt);
-    givenComp->rigidbody = givenSceneView.pScene->Get<Rigidbody>(givenEnt);
+    givenComp->transform = m_givenSceneView.pScene->Get<TransformComponent>(givenEnt);
+    givenComp->rigidbody = m_givenSceneView.pScene->Get<Rigidbody>(givenEnt);
 }
 
 void CircleColliderBehavior::update(CircleCollider* givenComp, EntityID givenEnt) {
-  for (EntityID ent : givenSceneView)
+  for (EntityID ent : m_givenSceneView)
   {
-    CircleCollider* cc = givenSceneView.pScene->Get<CircleCollider>(ent);
+    CircleCollider* cc = m_sceneState->Get<CircleCollider>(ent);
     if(ent != givenEnt){
       double diffX = cc->transform->x_pos - givenComp->transform->x_pos;
       double diffY = cc->transform->y_pos - givenComp->transform->y_pos;
@@ -40,7 +40,5 @@ void CircleColliderBehavior::update(CircleCollider* givenComp, EntityID givenEnt
 
 }
 
-CircleColliderBehavior::CircleColliderBehavior() : ComponentReader<CircleCollider>(){
+CircleColliderBehavior::CircleColliderBehavior(std::shared_ptr<Scene> scene) : ComponentReader<CircleCollider>(scene){
 }
-
-CircleColliderBehavior CircleColliderBehavior::base = CircleColliderBehavior();

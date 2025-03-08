@@ -27,7 +27,7 @@ class IRenderWindow {
         virtual InputCycle pollEvent() = 0;
 
         // Renders the scene given to it.
-        virtual void renderScene(Scene& givenScene) = 0;
+        virtual void renderScene(std::shared_ptr<Scene> givenScene) = 0;
 
         virtual ~IRenderWindow();
 

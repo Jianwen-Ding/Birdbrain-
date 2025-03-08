@@ -17,17 +17,17 @@ struct CircleCollider{
 // Scans for collisions and properly accordingly updates the cached rigidbodies
 class CircleColliderBehavior : public ComponentReader<CircleCollider>
 {
+
+public:
+    // Passes itself into ECSManager
+    CircleColliderBehavior(std::shared_ptr<Scene> scene);
+
+private:
     // Caches transform and rigidbody
     void start(CircleCollider* givenComp, EntityID givenEnt) override;
 
     // Checks for collisions, updating rigidbody on collisions
     void update(CircleCollider* givenComp, EntityID givenEnt) override;
-    
-    // Passes itself into ECSManager
-    CircleColliderBehavior();
-
-    // Constructs an instance of the behvaior to pass into the ECSManager
-    static CircleColliderBehavior base;
 };
 
 #endif

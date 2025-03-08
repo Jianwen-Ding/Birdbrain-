@@ -1,35 +1,27 @@
 #ifndef COMPONENTREADER_HPP
 #define COMPONENTREADER_HPP
 
-#include "Scene.hpp"
 #include "SceneView.hpp"
 #include "ComponentReaderBase.hpp"
-#include "ECSManager.hpp"
+#include "SceneManager.hpp"
 // This allows for an easier implementation of behaviors into the ECS as behaviors are
 // plugged in just by defining the correct types
 // The ComponentType is the component it processes
 // The BaseType is the class that inherits this, requires a empty constructor
 template<typename ComponentType>
-class ComponentReader : public ComponentReaderBase{
+class ComponentReader : public ComponentReaderBase<> {
     public:
-        // Takes in the current scene from the ECSManager
-        void insertScene(Scene& setScene) override{
-            givenSceneView = SceneView<ComponentType>(setScene);
-        }
-
         // Uses the implemented behavior on every component
-        void fullStart() override{
-            for (EntityID ent : givenSceneView)
-            {
-                start(givenSceneView.pScene->template Get<ComponentType>(ent), ent);
+        void fullStart() override {
+            for (EntityID ent : m_givenSceneView) {
+                start(m_givenSceneView.pScene->template Get<ComponentType>(ent), ent);
             }
         }
 
         // Uses the implemented behavior on every component
         void fullUpdate() override {
-            for (EntityID ent : givenSceneView)
-            {
-                update(givenSceneView.pScene->template Get<ComponentType>(ent), ent);
+            for (EntityID ent : m_givenSceneView) {
+                update(m_givenSceneView.pScene->template Get<ComponentType>(ent), ent);
             }
         }
     protected:
@@ -39,11 +31,9 @@ class ComponentReader : public ComponentReaderBase{
         virtual void update(ComponentType* givenComp, EntityID givenEnt) = 0;
 
         // Plugs itself into the ECSManager
-        ComponentReader() : ComponentReaderBase(), givenSceneView(ECSManager::getScene()){
-            ECSManager::insertReader(this);
-        }
+        ComponentReader(std::shared_ptr<Scene> sceneState) : ComponentReaderBase(sceneState), m_givenSceneView(sceneState) {}
 
         // The Scene to gleam relavant components to update from
-        SceneView<ComponentType> givenSceneView;
+        SceneView<ComponentType> m_givenSceneView;
 };
 #endif

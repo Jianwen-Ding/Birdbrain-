@@ -33,13 +33,13 @@ InputCycle SfmlRenderWindow::pollEvent(){
 }
 
 
-void SfmlRenderWindow::renderScene(Scene& givenScene){
+void SfmlRenderWindow::renderScene(std::shared_ptr<Scene> givenScene){
     mainWindow.clear(givenBackground);
     
     SceneView<CircleRenderer> scene = SceneView<CircleRenderer>(givenScene);
     for (EntityID ent : scene)
     {
-        CircleRenderer* givenRenderer = givenScene.Get<CircleRenderer>(ent);
+        CircleRenderer* givenRenderer = givenScene->Get<CircleRenderer>(ent);
         
         sf::CircleShape shape(givenRenderer->transform->radius);
 
