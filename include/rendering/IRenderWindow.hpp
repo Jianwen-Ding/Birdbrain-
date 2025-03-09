@@ -40,13 +40,13 @@ class IRenderWindow {
                 virtual void setBuildBackColor(Color setColor) = 0;
 
                 // Sets the width of the window to be created.
-                virtual void setBuildWidth(int setWidth) = 0;
+                virtual void setBuildWindowWidth(int setWidth) = 0;
 
                 // Sets the height of the window to be created.
-                virtual void setWindowHeight(int setHeight) = 0;
+                virtual void setBuildWindowHeight(int setHeight) = 0;
 
                 // Sets the title of the window
-                virtual void setWindowTitle(std::string setTitle) = 0;
+                virtual void setBuildWindowTitle(std::string setTitle) = 0;
 
                 // Builds a window based on parameters.
                 virtual T build() = 0;

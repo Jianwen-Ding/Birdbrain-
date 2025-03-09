@@ -1,4 +1,5 @@
 #include "SfmlRenderWindow.hpp"
+#include <iostream>
 
 // Main functions
 Color SfmlRenderWindow::getBackColor(){
@@ -22,6 +23,8 @@ InputCycle SfmlRenderWindow::pollEvent(){
     // check all the window's events that were triggered since the last iteration of the loop
     sf::Event event;
 
+    InputCycle retCycle;
+
     while (mainWindow.pollEvent(event))
     {
         // "close requested" event: we close the window
@@ -41,11 +44,11 @@ void SfmlRenderWindow::renderScene(std::shared_ptr<Scene> givenScene){
     {
         CircleRenderer* givenRenderer = givenScene->Get<CircleRenderer>(ent);
         
-        sf::CircleShape shape(givenRenderer->transform->radius);
+        sf::CircleShape shape(givenRenderer->m_transform->m_radius / 10);
 
-        shape.setFillColor(sf::Color(givenRenderer->renderColor.r, givenRenderer->renderColor.g, givenRenderer->renderColor.b));
+        shape.setFillColor(sf::Color(givenRenderer->m_renderColor.r, givenRenderer->m_renderColor.g, givenRenderer->m_renderColor.b));
 
-        shape.setPosition(givenRenderer->transform->x_pos, givenRenderer->transform->y_pos);
+        shape.setPosition(givenRenderer->m_transform->m_pos.m_x / 10, givenRenderer->m_transform->m_pos.m_y / 10);
         
         mainWindow.draw(shape);
     }
@@ -92,7 +95,6 @@ SfmlRenderWindow::SfmlRenderWindow(Color setBackground, int setHeight, int setWi
     width(setWidth) ,
     mainWindow(sf::VideoMode(setWidth, setHeight), setString){
     profilerFont.loadFromFile("../../resources/cour.ttf");
-    std::cout << "build" << std::endl;
 }
 
 SfmlRenderWindow::~SfmlRenderWindow(){
@@ -104,15 +106,15 @@ void SfmlRenderWindow::SfmlRenderWindowBuilder::setBuildBackColor(Color setColor
     givenColor = setColor;
 }
 
-void SfmlRenderWindow::SfmlRenderWindowBuilder::setBuildWidth(int setWidth){
+void SfmlRenderWindow::SfmlRenderWindowBuilder::setBuildWindowWidth(int setWidth){
     width = setWidth;
 }
 
-void SfmlRenderWindow::SfmlRenderWindowBuilder::setWindowHeight(int setHeight){
+void SfmlRenderWindow::SfmlRenderWindowBuilder::setBuildWindowHeight(int setHeight){
     height = setHeight;
 }
 
-void SfmlRenderWindow::SfmlRenderWindowBuilder::setWindowTitle(std::string setTitle){
+void SfmlRenderWindow::SfmlRenderWindowBuilder::setBuildWindowTitle(std::string setTitle){
     title = std::string(setTitle);
 }
 

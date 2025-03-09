@@ -1,11 +1,12 @@
 #ifndef TRANSFORMCOMPONENT_HPP
 #define TRANSFORMCOMPONENT_HPP
 
+#include "Vector2i.hpp"
+
 // Represents a point in a 2D space as a Component
 struct TransformComponent {
-    float x_pos{5};
-    float y_pos{5};
-    float radius{5};    
+    Vector2i m_pos { 0, 0};
+    int m_radius{500};    
 };
 
 // Does not have any innate behaviors

@@ -14,24 +14,26 @@ class ComponentReader : public ComponentReaderBase<> {
         // Uses the implemented behavior on every component
         void fullStart() override {
             for (EntityID ent : m_givenSceneView) {
-                start(m_givenSceneView.pScene->template Get<ComponentType>(ent), ent);
+                start(m_givenSceneView.m_pScene->template Get<ComponentType>(ent), ent);
             }
         }
 
         // Uses the implemented behavior on every component
         void fullUpdate() override {
             for (EntityID ent : m_givenSceneView) {
-                update(m_givenSceneView.pScene->template Get<ComponentType>(ent), ent);
+                update(m_givenSceneView.m_pScene->template Get<ComponentType>(ent), ent);
             }
         }
+
+        ComponentReader(std::shared_ptr<Scene> sceneState) : ComponentReaderBase(sceneState), m_givenSceneView(sceneState) {}
+
+        virtual ~ComponentReader() = default;
+        
     protected:
         // The behavior that a component initiates when the ECSManager actually starts the game
         virtual void start(ComponentType* givenComp, EntityID givenEnt) = 0;
         // The behavior that a component initiates every frame
         virtual void update(ComponentType* givenComp, EntityID givenEnt) = 0;
-
-        // Plugs itself into the ECSManager
-        ComponentReader(std::shared_ptr<Scene> sceneState) : ComponentReaderBase(sceneState), m_givenSceneView(sceneState) {}
 
         // The Scene to gleam relavant components to update from
         SceneView<ComponentType> m_givenSceneView;

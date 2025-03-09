@@ -33,11 +33,11 @@ class SfmlRenderWindow : public IRenderWindow {
 
                 void setBuildBackColor(Color setColor) override;
 
-                void setBuildWidth(int setWidth) override;
+                void setBuildWindowWidth(int setWidth) override;
 
-                void setWindowHeight(int setHeight) override;
+                void setBuildWindowHeight(int setHeight) override;
 
-                void setWindowTitle(std::string setTitle) override;
+                void setBuildWindowTitle(std::string setTitle) override;
 
                 SfmlRenderWindow build() override;
 
@@ -48,6 +48,31 @@ class SfmlRenderWindow : public IRenderWindow {
         };
 
         bool isActive() override;
+
+        // Helper function for adding button inputs through poll event
+        inline void flipButtonOn(InputCycle& givenCycle, const ButtonType type) {
+            // Creates input if it doesn't already exist
+            if(givenCycle.buttonInputs.find(type) == givenCycle.buttonInputs.end()) {
+                givenCycle.buttonInputs.insert(std::pair<ButtonType, ButtonState>(type, ButtonState()));
+            }
+            else if(!givenCycle.buttonInputs[type].m_endOn) {
+                givenCycle.buttonInputs[type].m_flipStates += 1;
+            }
+            givenCycle.buttonInputs[type].m_endOn = true;
+        }
+
+        // Helper function for adding button inputs through poll event
+        inline void flipButtonOff(InputCycle& givenCycle, const ButtonType type) {
+            // Creates input if it doesn't already exist
+            if(givenCycle.buttonInputs.find(type) == givenCycle.buttonInputs.end()) {
+                givenCycle.buttonInputs.insert(std::pair<ButtonType, ButtonState>(type, ButtonState()));
+            }
+            else if(givenCycle.buttonInputs[type].m_endOn) {
+                givenCycle.buttonInputs[type].m_flipStates += 1;
+            }
+            givenCycle.buttonInputs[type].m_endOn = false;
+        }
+
 
         InputCycle pollEvent() override;
 

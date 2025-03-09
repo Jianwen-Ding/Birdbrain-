@@ -7,10 +7,9 @@
 
 struct Rigidbody {
   // Cached transform to update position of
-  TransformComponent* givenTransform{nullptr};
+  TransformComponent* m_givenTransform{nullptr};
   // X and Y velocities
-  float v_x{0.5};
-  float v_y{0.5};
+  Vector2i m_vel {0, 0};
 };
 
 class RigidBodyBehavior : public ComponentReader<Rigidbody>{

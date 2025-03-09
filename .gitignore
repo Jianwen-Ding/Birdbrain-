@@ -406,3 +406,5 @@ FodyWeavers.xsd
 *.filters
 *.sln
 Makefile
+include/.DS_Store
+.vscode

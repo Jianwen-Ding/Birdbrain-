@@ -9,9 +9,9 @@
 struct CircleCollider{
     // Caches the transform of the collider to find location of colliders
     // Also used to determine radius of collider
-    TransformComponent* transform{nullptr};
+    TransformComponent* m_transform {nullptr};
     // Caches the rigidbody of the collider to update velocity on collisions
-    Rigidbody* rigidbody;
+    Rigidbody* m_rigidbody {nullptr};
 };
 
 // Scans for collisions and properly accordingly updates the cached rigidbodies

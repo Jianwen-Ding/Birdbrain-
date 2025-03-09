@@ -10,10 +10,10 @@
 
 struct CircleRenderer{
     // Caches transform
-    TransformComponent* transform;
+    TransformComponent* m_transform {nullptr};
 
     // Color to render as
-    Color renderColor{Color(0,0,0)};
+    Color m_renderColor{Color(0,0,0)};
 };
 
 class CircleRenderBehavior : public ComponentReader<CircleRenderer>{

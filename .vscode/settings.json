@@ -62,4 +62,5 @@
         "print": "cpp",
         "stack": "cpp"
     },
+    "makefile.makefilePath": "${workspace}/out/build/Makefile",
 }

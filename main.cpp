@@ -10,8 +10,8 @@
 #include <queue>
 
 // for the ball game we make with the ECS
-#define BALL_RADIUS 2.5
-#define NUM_BALLS 1000
+#define BALL_RADIUS 100
+#define NUM_BALLS 10
 
 // Loads ECS System
 #include "ComponentPool.hpp"
@@ -40,7 +40,10 @@ float RandInBetween(float LO, float HI)
 }
 
 int main() {
-  SfmlRenderWindow window = SfmlRenderWindow::SfmlRenderWindowBuilder().build();
+  SfmlRenderWindow::SfmlRenderWindowBuilder builder;
+  builder.setBuildWindowWidth(WINDOW_WIDTH);
+  builder.setBuildWindowHeight(WINDOW_HEIGHT);
+  SfmlRenderWindow window = builder.build();
   srand (static_cast <unsigned> (time(0)));
   
   std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
@@ -54,21 +57,19 @@ int main() {
     CircleCollider* pBallCC = scene->Assign<CircleCollider>(ball);
     float radius = BALL_RADIUS;
     
-    pBallRender->renderColor = Color(255,255,255);
-    pBallRender->transform = pBallTransform;
-    pBallTransform->x_pos = RandInBetween(radius, WINDOW_WIDTH - radius);
-    pBallTransform->y_pos = RandInBetween(radius, WINDOW_HEIGHT - radius);
-    pBallRb->v_x = RandInBetween(0.1, 0.5);
-    pBallRb->v_y = RandInBetween(0.1, 0.5);
-    pBallTransform->radius = radius;
+    pBallRender->m_renderColor = Color(255,255,255);
+    pBallRender->m_transform = pBallTransform;
+    pBallTransform->m_pos.m_x = RandInBetween(radius, (WINDOW_WIDTH * 10) - radius);
+    pBallTransform->m_pos.m_y = RandInBetween(radius, (WINDOW_HEIGHT * 10) - radius);
+    pBallRb->m_vel.m_x = RandInBetween(25, 50);
+    pBallRb->m_vel.m_y = RandInBetween(25, 50);
+    pBallTransform->m_radius = radius;
 
   }
   SceneManager sceneManager = SceneManager(scene);
   sceneManager.insertReader<CircleColliderBehavior>();
-  sceneManager.insertReader<CircleRenderBehavior>();
   sceneManager.insertReader<RigidBodyBehavior>();
   TimeManager::init();
-
 
   sceneManager.start();
   
@@ -76,10 +77,8 @@ int main() {
   while (window.isActive())
   {
     window.pollEvent();
-
     sceneManager.update();
     TimeManager::update();
-
     window.renderScene(scene);
   }
 }

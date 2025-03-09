@@ -21,11 +21,11 @@ struct ComponentPool
   inline void* get(size_t index)
   {
     // looking up the component at the desired index
-    return pData + index * elementSize;
+    return m_pData + index * m_elementSize;
   }
 
-  u8* pData{ nullptr };
-  size_t elementSize{ 0 };
+  u8* m_pData{ nullptr };
+  size_t m_elementSize{ 0 };
 };
 
 #endif

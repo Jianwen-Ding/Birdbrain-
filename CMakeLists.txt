@@ -17,6 +17,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/include/rendering
     ${CMAKE_SOURCE_DIR}/include/rendering/SFML
     ${CMAKE_SOURCE_DIR}/include/input
+    ${CMAKE_SOURCE_DIR}/include/math
     ${CMAKE_SOURCE_DIR}/include/ecs
     ${CMAKE_SOURCE_DIR}/include/ecs/components
 )

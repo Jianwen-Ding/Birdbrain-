@@ -13,7 +13,7 @@
 // component pool.
 struct Scene {
   struct EntityEntry {
-    EntityID m_id;  // though redundent with index in vector, required
+    EntityID m_id;  // though redundant with index in vector, required
                   // for deleting entities,
     ComponentMask m_mask;
   };

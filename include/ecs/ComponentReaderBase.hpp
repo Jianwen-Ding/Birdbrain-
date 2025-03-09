@@ -16,13 +16,13 @@ class ComponentReaderBase {
         // Uses the implemented behavior on every component
         virtual void fullUpdate(Args... args) = 0;
 
-
-
-    protected:
         ComponentReaderBase(std::shared_ptr<Scene> setScene) {
             m_sceneState = setScene;
         }
 
+        virtual ~ComponentReaderBase() = default;
+
+    protected:
         std::shared_ptr<Scene> m_sceneState;
 };
 
