@@ -408,3 +408,4 @@ FodyWeavers.xsd
 Makefile
 include/.DS_Store
 .vscode
+.DS_Store

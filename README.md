@@ -1,3 +1,6 @@
+## TODO:
+- Implement FixedPointArithmetic <- By myself lmao
+
 ## Design Notes
 
 - The reason why `u64` is used for EntityID is to avoid narrowing. We use

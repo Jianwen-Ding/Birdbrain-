@@ -63,4 +63,6 @@
         "stack": "cpp"
     },
     "makefile.makefilePath": "${workspace}/out/build/Makefile",
+    "cmake.ctestPath": "ctest",
+    "cmake.buildDirectory": "${workspaceFolder}/out/build"
 }
