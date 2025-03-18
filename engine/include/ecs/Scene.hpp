@@ -13,11 +13,11 @@
 // component pool.
 struct Scene {
   struct EntityEntry {
-    EntityID m_id;  // though redundant with index in vector, required
-                  // for deleting entities,
-    ComponentMask m_mask;
+    EntityID m_id{ };  // though redundant with index in vector, required
+                       // for deleting entities,
+    ComponentMask m_mask{ };
   };
-  std::vector<EntityEntry> m_entities;
+  std::vector<EntityEntry> m_entities{ };
   std::vector<ComponentPool*> m_componentPools;
   std::vector<unsigned int> m_freeIndices;
 

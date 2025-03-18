@@ -44,11 +44,11 @@ void SfmlRenderWindow::renderScene(std::shared_ptr<Scene> givenScene){
     {
         CircleRenderer* givenRenderer = givenScene->Get<CircleRenderer>(ent);
         
-        sf::CircleShape shape(givenRenderer->m_transform->m_radius / 10);
+        sf::CircleShape shape(givenRenderer->m_transform->m_radius / 200.0f);
 
         shape.setFillColor(sf::Color(givenRenderer->m_renderColor.r, givenRenderer->m_renderColor.g, givenRenderer->m_renderColor.b));
 
-        shape.setPosition(givenRenderer->m_transform->m_pos.m_x / 10, givenRenderer->m_transform->m_pos.m_y / 10);
+        shape.setPosition(givenRenderer->m_transform->m_pos.m_x / 200.0f, givenRenderer->m_transform->m_pos.m_y / 200.0f);
         
         mainWindow.draw(shape);
     }

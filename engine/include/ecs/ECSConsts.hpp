@@ -5,9 +5,8 @@
 #include <vector>
 #include <bitset>
 
-typedef uint8_t u8;
-typedef uint32_t u32;
-typedef uint64_t u64;
+#include "MathConsts.hpp"
+
 typedef uint64_t EntityID;
 static const uint32_t MAX_COMPONENTS = 32;
 typedef std::bitset<MAX_COMPONENTS> ComponentMask;
@@ -49,11 +48,11 @@ struct ECSConsts{
     // Gets a unique identifier for the given component T, which is
     // guaranteed to be different from previous outputs for only the first
     // 2^64 unsigned ints. 
-    static u64 s_componentCounter;
+    static uint64 s_componentCounter;
     template <class T>
     static int GetId()
     {
-        static u64 s_componentId = s_componentCounter++;
+        static uint64 s_componentId = s_componentCounter++;
         return s_componentId;
     }
 };

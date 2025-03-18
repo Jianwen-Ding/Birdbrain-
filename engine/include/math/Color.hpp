@@ -1,20 +1,20 @@
 #ifndef COLOR_HPP
 #define COLOR_HPP
 
-#include <cstdint>
+#include "MathConsts.hpp"
 
 // Represents a color to be rendered
 // Always a solid color
 struct Color {
     // Red value of the color
-    uint8_t r;
+    uint8 r{ 0 };
     // Green value of the color
-    uint8_t g;
+    uint8 g{ 0 };
     // Blue value of the color
-    uint8_t b;
+    uint8 b{ 0 };
 
     // Constructs a color with the given RGB values
-    Color(uint8_t r, uint8_t g, uint8_t b);
+    Color(uint8 r, uint8 g, uint8 b);
 
     // Constructs a pure black color
     Color();

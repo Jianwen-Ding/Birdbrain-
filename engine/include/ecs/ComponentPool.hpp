@@ -24,7 +24,7 @@ struct ComponentPool
     return m_pData + index * m_elementSize;
   }
 
-  u8* m_pData{ nullptr };
+  uint8* m_pData{ nullptr };
   size_t m_elementSize{ 0 };
 };
 

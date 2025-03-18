@@ -1,11 +1,11 @@
 #ifndef INPUT_HPP
 #define INPUT_HPP
 
-#include <cstdint>
+#include "MathConsts.hpp"
 
 // Inputs are identified by an ID system where in the input gathered is activates certain ID's.
 // This allows for actual input to be abstract away from the results of said input (i.e. one person could bind kick to c while another can bind kick to d)
-enum ButtonType : uint8_t {
+enum ButtonType : uint8 {
     KEY_Q = 1,
     KEY_W = 2,
     KEY_E = 3,
@@ -29,10 +29,10 @@ struct ButtonState {
     // Whether by the end of the frame 
     bool m_endOn { false };
     // The amounts of times that it has been flipped. Does not include start.
-    uint8_t m_flipStates { 0 };
+    uint8 m_flipStates { 0 };
     
     // Times that the input state has been flipped on (does not include the start state as having flipped on)
-    inline uint8_t flipOnTimes() {
+    inline uint8 flipOnTimes() {
         if(m_endOn) {
             return 1 + (m_flipStates / 2);
         }
@@ -42,7 +42,7 @@ struct ButtonState {
     }
 
     // Times that the input state has been flipped off (does not include the start state as having flipped off)
-    inline uint8_t flipOffTimes() {
+    inline uint8 flipOffTimes() {
         if(m_endOn) {
             return m_flipStates / 2;
         }

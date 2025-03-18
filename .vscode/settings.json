@@ -60,7 +60,8 @@
         "queue": "cpp",
         "execution": "cpp",
         "print": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "__availability": "cpp"
     },
     "makefile.makefilePath": "${workspace}/out/build/Makefile",
     "cmake.ctestPath": "ctest",

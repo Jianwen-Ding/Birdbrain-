@@ -10,8 +10,8 @@
 #include <queue>
 
 // for the ball game we make with the ECS
-#define BALL_RADIUS 100
-#define NUM_BALLS 10
+#define BALL_RADIUS 2000
+#define NUM_BALLS 2
 
 // Loads ECS System
 #include "ComponentPool.hpp"
@@ -48,7 +48,7 @@ int main() {
   
   std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
   // Instantiate all the balls.
-  for (u32 i = 0; i < NUM_BALLS; i++)
+  for (uint32 i = 0; i < NUM_BALLS; i++)
   {
     EntityID ball = scene->NewEntity();
     CircleRenderer* pBallRender = scene->Assign<CircleRenderer>(ball);
@@ -59,10 +59,10 @@ int main() {
     
     pBallRender->m_renderColor = Color(255,255,255);
     pBallRender->m_transform = pBallTransform;
-    pBallTransform->m_pos.m_x = RandInBetween(radius, (WINDOW_WIDTH * 10) - radius);
-    pBallTransform->m_pos.m_y = RandInBetween(radius, (WINDOW_HEIGHT * 10) - radius);
-    pBallRb->m_vel.m_x = RandInBetween(25, 50);
-    pBallRb->m_vel.m_y = RandInBetween(25, 50);
+    pBallTransform->m_pos.m_x = RandInBetween(radius, (WINDOW_WIDTH * 200) - radius);
+    pBallTransform->m_pos.m_y = RandInBetween(radius, (WINDOW_HEIGHT * 200) - radius);
+    pBallRb->m_vel.m_x = RandInBetween(5, 8);
+    pBallRb->m_vel.m_y = RandInBetween(5, 8);
     pBallTransform->m_radius = radius;
 
   }

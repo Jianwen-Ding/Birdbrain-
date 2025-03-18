@@ -18,24 +18,24 @@ void CircleColliderBehavior::update(CircleCollider* givenComp, EntityID givenEnt
       Rigidbody* rigidbody = givenComp->m_rigidbody;
       Vector2i diff = otherTransform ->m_pos - transform->m_pos;
       int distance = diff.mag();
-      if(distance < otherTransform ->m_radius + transform->m_radius){
+      if(distance < otherTransform->m_radius + transform->m_radius){
         Vector2i norm = diff / distance;
-        int thisSpeedMag = -DetMath::sqrt(rigidbody->m_vel.m_x * rigidbody->m_vel.m_x + rigidbody->m_vel.m_y * rigidbody->m_vel.m_y);
+        int thisSpeedMag = -rigidbody->m_vel.mag();
         rigidbody->m_vel= norm * thisSpeedMag;
-        double speedMag = DetMath::sqrt(otherRigidbody->m_vel.m_x * otherRigidbody->m_vel.m_x+ otherRigidbody->m_vel.m_y * otherRigidbody->m_vel.m_y );
+        int speedMag = otherRigidbody->m_vel.mag();
         otherRigidbody->m_vel = norm * speedMag;
       }
     }
   }
 
   // Collision check x-axis
-  if ((givenComp->m_transform->m_pos.m_x - givenComp->m_transform->m_radius) < 0 || (givenComp->m_transform->m_pos.m_x + givenComp->m_transform->m_radius) > 800 * 10)
+  if ((givenComp->m_transform->m_pos.m_x - givenComp->m_transform->m_radius) < 0 || (givenComp->m_transform->m_pos.m_x + givenComp->m_transform->m_radius) > 800 * 200)
   {
     givenComp->m_rigidbody->m_vel.m_x *= -1;
   }
 
   // Collision check y-axis
-  if ((givenComp->m_transform->m_pos.m_y - givenComp->m_transform->m_radius) < 0 || (givenComp->m_transform->m_pos.m_y + givenComp->m_transform->m_radius) > 600 * 10)
+  if ((givenComp->m_transform->m_pos.m_y - givenComp->m_transform->m_radius) < 0 || (givenComp->m_transform->m_pos.m_y + givenComp->m_transform->m_radius) > 600 * 200)
   {
     givenComp->m_rigidbody->m_vel.m_y *= -1;
   }

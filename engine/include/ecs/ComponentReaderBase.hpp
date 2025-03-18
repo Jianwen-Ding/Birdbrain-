@@ -23,7 +23,7 @@ class ComponentReaderBase {
         virtual ~ComponentReaderBase() = default;
 
     protected:
-        std::shared_ptr<Scene> m_sceneState;
+        std::shared_ptr<Scene> m_sceneState{ nullptr };
 };
 
 #endif
