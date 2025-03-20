@@ -10,8 +10,8 @@
 #include <queue>
 
 // for the ball game we make with the ECS
-#define BALL_RADIUS 2000
-#define NUM_BALLS 2
+#define BALL_RADIUS 300
+#define NUM_BALLS 10
 
 // Loads ECS System
 #include "ComponentPool.hpp"
@@ -59,10 +59,10 @@ int main() {
     
     pBallRender->m_renderColor = Color(255,255,255);
     pBallRender->m_transform = pBallTransform;
-    pBallTransform->m_pos.m_x = RandInBetween(radius, (WINDOW_WIDTH * 200) - radius);
-    pBallTransform->m_pos.m_y = RandInBetween(radius, (WINDOW_HEIGHT * 200) - radius);
-    pBallRb->m_vel.m_x = RandInBetween(5, 8);
-    pBallRb->m_vel.m_y = RandInBetween(5, 8);
+    pBallTransform->m_pos.m_x = RandInBetween(radius * 2, (WINDOW_WIDTH * 32) - radius * 2);
+    pBallTransform->m_pos.m_y = RandInBetween(radius * 2, (WINDOW_HEIGHT * 32) - radius * 2);
+    pBallRb->m_vel.m_x = RandInBetween(10, 13);
+    pBallRb->m_vel.m_y = RandInBetween(10, 13);
     pBallTransform->m_radius = radius;
 
   }

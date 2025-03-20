@@ -13,7 +13,7 @@ struct Vector2i {
     Vector2i(int x, int y) : m_x(x), m_y(y) {}
 
     // Gets the magnitude of the current vector
-    inline int mag() const {
+    inline uint mag() const {
         return DetMath::sqrt(this->m_x * this->m_x + this->m_y * this->m_y);
     }
 

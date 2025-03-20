@@ -61,7 +61,14 @@
         "execution": "cpp",
         "print": "cpp",
         "stack": "cpp",
-        "__availability": "cpp"
+        "__availability": "cpp",
+        "any": "cpp",
+        "forward_list": "cpp",
+        "fstream": "cpp",
+        "iomanip": "cpp",
+        "list": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp"
     },
     "makefile.makefilePath": "${workspace}/out/build/Makefile",
     "cmake.ctestPath": "ctest",
