@@ -46,6 +46,7 @@ endfunction()
 test_insert(main_test main_test.cpp)
 test_insert(DetMathTests math/DetMathTests.cpp)
 test_insert(Vector2iTests math/Vector2iTests.cpp)
+test_insert(FixedPointTests math/FixedPointTests.cpp)
 
 #test_insert(DetMathTest src/math/DetMathTests.cpp)
 #main_gtest 

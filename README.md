@@ -1,5 +1,7 @@
 ## TODO:
 - Implement FixedPointArithmetic <- By myself lmao
+- Make sure bit shifting operations work with all endianess
+- 
 
 ## Design Notes
 
