@@ -1,11 +1,24 @@
 #ifndef MATHCONSTS_HPP
 #define MATHCONSTS_HPP
 
+#include "DEBUG.hpp"
+
 #include <cstdint>
 #include <array>
 
+// Typedefs and handles that deal with the byte sizes that integers come in
+#pragma region Integer Types
+// Concepts that restricts to a certain type of integer
+template <typename T>
+concept Int = std::is_integral_v<T>;
 
-#pragma region Typedef
+template <typename T>
+concept SignedInt = std::is_integral_v<T> && std::is_signed_v<T>;
+
+template <typename T>
+concept UnsignedInt = std::is_integral_v<T> && std::is_unsigned_v<T>;
+
+// Typedefs that simplifies integer name
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -51,16 +64,4 @@ constexpr bool FLOAT_IEEE754_REP = FloatConform(30, 1106247680)
                     && DoubleConform(-4392301092102903, 14064519039207523822u)
                     && DoubleConform(0.2509765625, 4598192811731320832u);
 #pragma endregion
-
-#pragma region Concepts
-template <typename T>
-concept UnsignedInt = std::is_integral_v<T> && std::is_unsigned_v<T>;
-
-template <typename T>
-concept SignedInt = std::is_integral_v<T> && std::is_signed_v<T>;
-
-template <typename T>
-concept Int = std::is_integral_v<T>;
-#pragma endregion
-
 #endif

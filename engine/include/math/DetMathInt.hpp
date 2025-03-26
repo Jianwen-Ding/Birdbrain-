@@ -9,7 +9,6 @@
     // Stands for deterministic math. No matter the machine/circumstance all inputs should result in the same output.
     // This class is meant to help replace any non deterministic math operations present in std.
     // Use this in game logic to allow for rollback.
-    template <bool Rounded>
     class DetMathInt {
 
     public:
@@ -42,18 +41,21 @@
 
         template <SignedInt T>
         static constexpr T sqrt(T num) {
+            using V = typename std::make_unsigned<T>::type;
+
             ASSERT(num >= 0);
-            return sqrt(uint64(num));
+            return sqrt(V(num));
         }
 
         // Finds the sqrt of the given number and floors it to an int.
         template <UnsignedInt T>
         static constexpr T sqrt(T num) {
-            T orgNum;
-            // Stores original number for rounding
-            if constexpr (Rounded) {
-                orgNum = num;
-            }
+            // Potential for rounded numbers
+            // T orgNum;
+            // // Stores original number for rounding
+            // if constexpr (Rounded) {
+            //     orgNum = num;
+            // }
             // Uses bitwise integer square algorithm
             T bit = T(1) << ((std::bit_width(num) - 1) / 2 * 2);
             T result = 0;
@@ -68,19 +70,29 @@
                 bit >>= 2;
             }
 
-            // Determines rounded number
-            if constexpr (Rounded) {
-                T remainder = orgNum - (result * result);
-                if(remainder == 0) {
-                    return result;
-                }
-                return remainder < result ? result : result + 1;
-            }
+            // // Determines rounded number
+            // if constexpr (Rounded) {
+            //     T remainder = orgNum - (result * result);
+            //     if(remainder == 0) {
+            //         return result;
+            //     }
+            //     return remainder < result ? result : result + 1;
+            // }
             return result;
         }
 
-        static uint64 Log2(uint64 num) {
+        template <SignedInt T>
+        static constexpr T log2(T num) {
+            using V = typename std::make_unsigned<T>::type;
 
+            ASSERT(num >= 0);
+            return log2(V(num));
+        }
+
+        template <UnsignedInt T>
+        static constexpr T log2(T num) {
+            ASSERT(num != 0);
+            return std::bit_width(num) - 1;
         }
     private:
         /* For future implementation
@@ -99,9 +111,4 @@
         static constexpr std::array<int, 3600> tanTable { };
         */
     };
-
-    // Integer math with rounding
-    typedef DetMathInt<true> DetMathIntR;
-    // Integer math without rounding
-    typedef DetMathInt<false> DetMathIntN;
     #endif

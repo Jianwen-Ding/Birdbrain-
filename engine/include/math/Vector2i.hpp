@@ -14,7 +14,7 @@ struct Vector2i {
 
     // Gets the magnitude of the current vector
     inline uint mag() const {
-        return DetMathIntR::sqrt(this->m_x * this->m_x + this->m_y * this->m_y);
+        return DetMathInt::sqrt(this->m_x * this->m_x + this->m_y * this->m_y);
     }
 
     Vector2i operator-(Vector2i v2) const {

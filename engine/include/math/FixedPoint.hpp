@@ -10,7 +10,7 @@
 // This class defines a fixed point number,
 // this takes an integer class and allocates a number of bits to define what is below the decimal.
 // Used to allow for decimal math without potential determinism problems of floating point math. 
-template <typename Base, uint8 DecimalBits, typename = std::enable_if_t<DecimalBits < (sizeof(Base) * 8) - 1>>
+template <SignedInt Base, uint8 DecimalBits, typename = std::enable_if_t<DecimalBits < (sizeof(Base) * 8) - 1>>
 struct FixedPoint {
 
 private:
@@ -24,6 +24,10 @@ private:
             if (direct) { 
                 baseInt = base;
             } 
+        }
+
+        constexpr bool HasLength(const char* str) {
+            return strlen(str) != 0;
         }
     #pragma endregion
 
@@ -126,7 +130,7 @@ public:
                     break;
                 default:
                     // Invalid char
-                    assert(false);
+                    ASSERT(false);
             }
             if(hasReachedPoint) {
                 decimalPointStore.push_back(val);
@@ -141,24 +145,37 @@ public:
         // Processes integer and decimal part of the number
         uint64 integerPoint = 0;
         uint64 decimalPoint = 0;
-        uint64 tenIter = 1;
+        uint64 multIter = 1;
         for(size_t integerIter = integerPointStore.size() ; integerIter > 0 ; integerIter--) {
-            size_t intIdx = integerIter - 1;
-            integerPoint += integerPointStore[intIdx] * tenIter;
-            tenIter *= 10;
+            integerPoint += integerPointStore[integerIter - 1] * multIter;
+            multIter *= 10;
+
             // Hard limit for bits allocated to represent integers
-            assert(integerPoint > (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)) - 1);
+            #if DEBUGGING
+                // A little bit bigger for negative due to two's compliment
+                if(negative) {
+                    ASSERT(integerPoint <= (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)));
+                }
+                else {
+                    ASSERT(integerPoint <= (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)) - 1);
+                }
+            #endif
         }
-        tenIter = 1;
-        for(size_t decimalIter = decimalPointStore.size() ; decimalIter > 0 ; decimalIter--) {
-            size_t decIdx = decimalIter - 1;
-            decimalPoint += decimalPointStore[decIdx] * tenIter;
-            tenIter *= 10;
+
+        multIter = 1 << DecimalBits;
+        for(size_t decimalIter = 0 ; decimalIter < decimalPointStore.size() && multIter > 0 ; decimalIter++) {
+            multIter /= 10;
+            decimalPoint += decimalPointStore[decimalIter] * multIter;
         }
-    
-        // Process decimal point accordingly
-        //FixedPoint<Base,DecimalBits> decimalAmount =  decimalPoint / FixedPoint<Base,DecimalBits>(tenIter, true);
-        //baseInt = decimalAmount + FixedPoint<Base, DecimalBits>(integerPoint);
+        
+        uint64 final = (integerPoint << DecimalBits) + decimalPoint;
+
+        if(negative) {
+            baseInt =  -1 * Base(final);
+        }
+        else {
+            baseInt = Base(final);
+        }
     }
 
     #pragma endregion
@@ -176,7 +193,7 @@ public:
 
     #pragma endregion
 
-    // >>> Casts to other numeric types
+    // >>> Casts to other numeric types <<<
     #pragma region Casts
     operator Base () {
         return 0;
@@ -202,6 +219,11 @@ public:
         }
     }
     #pragma endregion
+
+    // Fetches the underlying integer that the fixed point stores it's data within.
+    Base getBase() {
+        return baseInt;
+    }
 };
 
 typedef FixedPoint<int, 8> fixed;
