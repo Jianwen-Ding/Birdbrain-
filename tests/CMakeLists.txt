@@ -44,7 +44,7 @@ add_test(${FIN_NAME} ${test_name})
 endfunction()
 
 test_insert(main_test main_test.cpp)
-test_insert(DetMathTests math/DetMathTests.cpp)
+test_insert(DetMathIntTests math/DetMathIntTests.cpp)
 test_insert(Vector2iTests math/Vector2iTests.cpp)
 test_insert(FixedPointTests math/FixedPointTests.cpp)
 

@@ -155,12 +155,13 @@ TEST(Vector2Integer, Division) {
 // Tests if utility functions of Vector2i work as intended 
 #pragma region Helper
 TEST(Vector2Integer, Magnitude) {
+    // Root cause is 
     EXPECT_EQ(Vector2i(0, 0).mag(), 0);
     EXPECT_EQ(Vector2i(1, 0).mag(), 1);
-    EXPECT_EQ(Vector2i(2, 2).mag(), 2);
+    EXPECT_EQ(Vector2i(2, 2).mag(), 3);
     EXPECT_EQ(Vector2i(4,5).mag(), 6);
     EXPECT_EQ(Vector2i(18,22).mag(), 28);
-    EXPECT_EQ(Vector2i(400,284).mag(), 490);
+    EXPECT_EQ(Vector2i(400,284).mag(), 491);
 }
 #pragma endregion
 

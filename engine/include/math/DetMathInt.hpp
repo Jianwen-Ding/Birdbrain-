@@ -1,12 +1,16 @@
-    #ifndef DETMATH_HPP
-    #define DETMATH_HPP
+    #ifndef DETMATHINT_HPP
+    #define DETMATHINT_HPP
 
+    #include "DEBUG.hpp"
     #include "MathConsts.hpp"
+
+    #include <bit>
 
     // Stands for deterministic math. No matter the machine/circumstance all inputs should result in the same output.
     // This class is meant to help replace any non deterministic math operations present in std.
     // Use this in game logic to allow for rollback.
-    class DetMath {
+    template <bool Rounded>
+    class DetMathInt {
 
     public:
         // TBD: A ->
@@ -15,40 +19,44 @@
         // Finds the sin of a given angle.
         // Angle is degrees multiplied by 10.
         // Returns expected result multiplied by 3600.
-        static int sin(int angle);
+        static constexpr int sin(int angle){
+            return 0;
+        }
 
         // TBD: CURRENTLY ONLY RETURNS 0
         // Finds the cos of a given angle.
         // Angle is degrees multiplied by 10.
         // Returns expected result multiplied by 3600.
-        static int cos(int angle);
+        static constexpr int cos(int angle){
+            return 0;
+        }
 
         // TBD: CURRENTLY ONLY RETURNS 0
         // Finds the tan of a given angle.
         // Angle is degrees multiplied by 10.
         // Returns expected result multiplied by 3600.
-        static int tan(int angle);
+        static constexpr int tan(int angle) {
+            return 0;
+        }
         // <-
 
+        template <SignedInt T>
+        static constexpr T sqrt(T num) {
+            ASSERT(num >= 0);
+            return sqrt(uint64(num));
+        }
+
         // Finds the sqrt of the given number and floors it to an int.
-        inline static uint sqrt(uint num) {
-            if( num == 0 ) {
-                return 0;
+        template <UnsignedInt T>
+        static constexpr T sqrt(T num) {
+            T orgNum;
+            // Stores original number for rounding
+            if constexpr (Rounded) {
+                orgNum = num;
             }
-
-            // Finds bit length of number in order to set up for square root
-            uint v = num;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v = (v >> 1) + 1;
             // Uses bitwise integer square algorithm
-            uint bit = 1 << (pos[((v * 0x077CB531UL) & 0xFFFFFFFF) >> 27] / 2 * 2);
-            uint result = 0;
-            uint origN = num;
-
+            T bit = T(1) << ((std::bit_width(num) - 1) / 2 * 2);
+            T result = 0;
             while (bit > 0) {
                 if (num >= result + bit) {
                     num -= result + bit;
@@ -59,9 +67,21 @@
                 }
                 bit >>= 2;
             }
+
+            // Determines rounded number
+            if constexpr (Rounded) {
+                T remainder = orgNum - (result * result);
+                if(remainder == 0) {
+                    return result;
+                }
+                return remainder < result ? result : result + 1;
+            }
             return result;
         }
 
+        static uint64 Log2(uint64 num) {
+
+        }
     private:
         /* For future implementation
         static constexpr void createSinLookup();
@@ -78,15 +98,10 @@
 
         static constexpr std::array<int, 3600> tanTable { };
         */
-
-        // Used to find bit positions for sqrt algorithm
-        // inline static constexpr int pos[32] {1, 2, 29, 3, 30, 15, 25, 4,
-        //     31, 23, 21, 16, 26, 18, 5, 9, 32, 28, 14, 24, 22, 20,
-        //     17, 8, 27, 13, 19, 7, 12, 6, 11, 10};
-
-        inline static constexpr uint8 pos[32] {0, 1, 28, 2, 29, 14, 24, 3,
-            30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23, 21, 19,
-            16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
     };
 
+    // Integer math with rounding
+    typedef DetMathInt<true> DetMathIntR;
+    // Integer math without rounding
+    typedef DetMathInt<false> DetMathIntN;
     #endif

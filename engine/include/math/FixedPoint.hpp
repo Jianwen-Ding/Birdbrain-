@@ -1,13 +1,11 @@
 #ifndef FIXEDPOINT_HPP
 #define FIXEDPOINT_HPP
 
+#include "DEBUG.hpp"
 #include "MathConsts.hpp"
 
 #include <bit>
 #include <cstddef>
-
-template <typename T>
-concept SignedInt = std::is_integral_v<T> && std::is_signed_v<T>;
 
 // This class defines a fixed point number,
 // this takes an integer class and allocates a number of bits to define what is below the decimal.
@@ -19,6 +17,7 @@ private:
     static constexpr uint64 divisor = uint64(1) << (1 + DecimalBits);
     Base baseInt{ 0 };
 
+    // >>> Private helper functions made to assist public functions <<<
     #pragma region Helpers
         template <SignedInt Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
         constexpr FixedPoint(Base2 base, bool direct) : FixedPoint(base){
@@ -29,6 +28,7 @@ private:
     #pragma endregion
 
 public:
+    // >>> Constructors <<<
     #pragma region Constructors
     constexpr FixedPoint() : baseInt( 0 ) {};
 
@@ -63,7 +63,7 @@ public:
 
     constexpr FixedPoint(const char* str) {
         // Checks if reader has anything to read
-        assert(strlen(str));
+        ASSERT(strlen(str));
     
         // Scans char for integer and decimal part of the number
         bool negative = false;
@@ -80,12 +80,12 @@ public:
             }
     
             // Processes char into a integer
-            uint8 val;
+            uint8 val = -1;
             switch(str[charIter]) {
                 case '.':
                     // Checks for a second decimal point
                     if(hasReachedPoint) {
-                        assert(false);
+                        ASSERT(false);
                     }
                     hasReachedPoint = true;
                     continue;
@@ -146,7 +146,7 @@ public:
             size_t intIdx = integerIter - 1;
             integerPoint += integerPointStore[intIdx] * tenIter;
             tenIter *= 10;
-            // Hard limit for bits left to represent integer point
+            // Hard limit for bits allocated to represent integers
             assert(integerPoint > (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)) - 1);
         }
         tenIter = 1;
@@ -154,25 +154,29 @@ public:
             size_t decIdx = decimalIter - 1;
             decimalPoint += decimalPointStore[decIdx] * tenIter;
             tenIter *= 10;
-            // Hard limit for 11 bits left to represent integer point
-            assert(decimalPoint > (uint64(1) << DecimalBits) - 1);
         }
     
         // Process decimal point accordingly
-        FixedPoint<Base,DecimalBits>(3, true) FixedPoint<Base,DecimalBits>(3, true);
-        // Processes 
-        baseInt = 3;
+        //FixedPoint<Base,DecimalBits> decimalAmount =  decimalPoint / FixedPoint<Base,DecimalBits>(tenIter, true);
+        //baseInt = decimalAmount + FixedPoint<Base, DecimalBits>(integerPoint);
     }
 
     #pragma endregion
 
+    // >>> Basic Arithmetic Functions (+, -, /, ect) <<<
     #pragma region Arithmetic
 
-    FixedPoint<Base,DecimalBits> operator/(FixedPoint<Base,DecimalBits> f2) {
-        return FixedPoint<Base,DecimalBits>(3, true);
+    FixedPoint<Base,DecimalBits> operator/(FixedPoint<Base,DecimalBits> rhs) {
+        return (rhs.baseInt * baseInt) << DecimalBits;
     } 
+
+    friend FixedPoint<Base,DecimalBits> operator/(Base lhs, const FixedPoint<Base,DecimalBits>& rhs) {
+        return (lhs << DecimalBits) / rhs.baseInt;
+    }
+
     #pragma endregion
 
+    // >>> Casts to other numeric types
     #pragma region Casts
     operator Base () {
         return 0;
@@ -197,9 +201,6 @@ public:
             return baseInt/((double)(1 << (1 + DecimalBits)));
         }
     }
-    #pragma endregion
-
-    #pragma region 
     #pragma endregion
 };
 

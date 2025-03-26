@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <array>
 
+
+#pragma region Typedef
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -14,7 +16,10 @@ typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
+#pragma endregion
 
+// Compiler time checks for properties of the current machine
+#pragma region MachineConfirmations
 // Checks whether floats conform to IEEE 754 standard
 template <typename T, typename B> 
 constexpr bool BitEquality(T a, B b)
@@ -45,4 +50,17 @@ constexpr bool FLOAT_IEEE754_REP = FloatConform(30, 1106247680)
                     && DoubleConform(1231223342231231, 4832783693910096636u)
                     && DoubleConform(-4392301092102903, 14064519039207523822u)
                     && DoubleConform(0.2509765625, 4598192811731320832u);
+#pragma endregion
+
+#pragma region Concepts
+template <typename T>
+concept UnsignedInt = std::is_integral_v<T> && std::is_unsigned_v<T>;
+
+template <typename T>
+concept SignedInt = std::is_integral_v<T> && std::is_signed_v<T>;
+
+template <typename T>
+concept Int = std::is_integral_v<T>;
+#pragma endregion
+
 #endif

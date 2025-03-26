@@ -1,6 +1,6 @@
 #include "CircleCollider.hpp"
 
-#include "DetMath.hpp"
+#include "DetMathInt.hpp"
 
 void CircleColliderBehavior::start(CircleCollider* givenComp, EntityID givenEnt) {
     givenComp->m_transform = m_givenSceneView.m_pScene->Get<TransformComponent>(givenEnt);

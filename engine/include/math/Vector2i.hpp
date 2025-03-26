@@ -1,7 +1,7 @@
 #ifndef VECTOR2_HPP
 #define VECTOR2_HPP
 
-#include "DetMath.hpp"
+#include "DetMathInt.hpp"
 
 // Represents a vector within the 2D world space.
 struct Vector2i {
@@ -14,7 +14,7 @@ struct Vector2i {
 
     // Gets the magnitude of the current vector
     inline uint mag() const {
-        return DetMath::sqrt(this->m_x * this->m_x + this->m_y * this->m_y);
+        return DetMathIntR::sqrt(this->m_x * this->m_x + this->m_y * this->m_y);
     }
 
     Vector2i operator-(Vector2i v2) const {
@@ -30,6 +30,8 @@ struct Vector2i {
     }
 
     Vector2i operator/(Vector2i v2) const {
+        ASSERT(v2.m_x != 0);
+        ASSERT(v2.m_y != 0);
         return Vector2i(this->m_x / v2.m_x, this->m_y / v2.m_y);;
     }
 
@@ -43,6 +45,7 @@ struct Vector2i {
     }
 
     Vector2i operator/(int v2) const {
+        ASSERT(v2 != 0);
         return Vector2i(this->m_x / v2, this->m_y / v2);;
     }
 
