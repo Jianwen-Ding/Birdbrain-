@@ -39,6 +39,8 @@
         }
         // <-
 
+        // Finds the square root of the given number and floors it to an int.
+        // Warning: Do not use negative numbers. This is converted to unsigned so unexpected numbers will output.
         template <SignedInt T>
         static constexpr T sqrt(T num) {
             using V = typename std::make_unsigned<T>::type;
@@ -81,6 +83,8 @@
             return result;
         }
 
+        // Finds the log base 2 of the given number and floors it to an int.
+        // Warning: Do not use negative numbers. This is converted to unsigned so unexpected numbers will output.
         template <SignedInt T>
         static constexpr T log2(T num) {
             using V = typename std::make_unsigned<T>::type;
@@ -89,10 +93,66 @@
             return log2(V(num));
         }
 
+        // Finds the log base 2 of the given number and floors it to an int.
         template <UnsignedInt T>
         static constexpr T log2(T num) {
             ASSERT(num != 0);
             return std::bit_width(num) - 1;
+        }
+        
+        // Finds the log of the given number and floors it to an int.
+        // Warning: Do not use negative numbers. This is converted to unsigned so unexpected numbers will output.
+        template <SignedInt T>
+        static constexpr T log(T num, uint8 base) {
+            using V = typename std::make_unsigned<T>::type;
+
+            ASSERT(num >= 0);
+            return log(V(num), base);
+        }
+
+        // Finds the log of the given number and floors it to an int.
+        template <UnsignedInt T>
+        static constexpr T log(T num, uint8 base) {
+            ASSERT(base != 0);
+
+            if(base == 1) {
+                return 0;
+            }
+
+            T ans = 0;
+            while (num >= base) {
+                num /= base;
+                ans++;
+            }
+            return ans;
+        }
+    
+        // Finds the power of one number to another.
+        template <SignedInt T>
+        static constexpr int64 pow(T num, uint8 pow) {
+            int64 result = 1;
+            while(pow > 0) {
+                if(pow & 1) {
+                    result = (result*num);
+                }
+                num = (num * num);
+                pow >>= 1;
+            }
+            return result;
+        }
+
+        // Finds the power of one number to another.
+        template <UnsignedInt T>
+        static constexpr uint64 pow(T num, uint8 pow) {
+            uint64 result = 1;
+            while(pow > 0) {
+                if(pow & 1) {
+                    result = (result*num);
+                }
+                num = (num * num);
+                pow >>= 1;
+            }
+            return result;
         }
     private:
         /* For future implementation

@@ -9,7 +9,6 @@
     #include <cassert>
 
     #define ASSERT(x) assert(x)
-    #define ASSERTM(x) 
     #define LOG(x) std::cout << x << std::endl
 #else
     #define ASSERT(x) ((void)0)
