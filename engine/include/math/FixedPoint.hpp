@@ -67,7 +67,7 @@ public:
 
     // Used for FixedPoint string literals.
     // Will fail on too high a number.
-    // If Decimal Bit is 60 or higher a level of precision will be sacrificed in order to prevent overflow.
+    // It can at most be precise to 59 bits to stop overflow
     constexpr FixedPoint(const char* str) {
         // Checks if reader has anything to read
         ASSERT(strlen(str) >= 0);
@@ -146,22 +146,37 @@ public:
     
         // Processes integer part of number
         uint64 integerPoint = 0;
+        #if DEBUGGING 
+        bool atLimit = false;
+        #endif 
         {
             uint64 multIter = 1;
+            
+            #if DEBUGGING
+            // Hard limit for bits allocated to represent integers
+            // A little bit bigger for negative due to two's compliment
+            uint64 limit;
+            if(negative) {
+                limit = (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1));
+            }
+            else {
+                limit = (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)) - 1;
+            }
+            uint64 maxMult = DetMathInt::pow(10, DetMathInt::log(uint64(1) << 63, 10));
+            uint8 maxMostSigDigit = limit/maxMult;
+            #endif
+
             for(size_t integerIter = integerPointStore.size() ; integerIter > 0 ; integerIter--) {
                 integerPoint += integerPointStore[integerIter - 1] * multIter;
+                ASSERT(!(multIter == maxMult && integerPointStore[integerIter - 1] > maxMostSigDigit) && integerPoint <= limit);
                 multIter *= 10;
-                // Hard limit for bits allocated to represent integers
-                #if DEBUGGING
-                    // A little bit bigger for negative due to two's compliment
-                    if(negative) {
-                        ASSERT(integerPoint <= (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)));
-                    }
-                    else {
-                        ASSERT(integerPoint <= (uint64(1) << ((sizeof(Base) * 8) - DecimalBits - 1)) - 1);
-                    }
-                #endif
             }   
+
+            #if DEBUGGING
+            if(integerPoint == limit) {
+                atLimit = true;
+            }
+            #endif
         }
 
         // More complex part processing decimal point
@@ -170,22 +185,34 @@ public:
 
         {
             // Will sacrifice some precision to prevent overflow if needed
-            constexpr bool overflowStopper = DecimalBits >= 60;
-            constexpr uint64 mult = overflowStopper ? ((uint(1) << DecimalBits)/10) : (uint(1) << DecimalBits);
+            constexpr bool overflowStopper = DecimalBits > 59;
+            
+            const uint64 mult = (uint64(1) << DecimalBits);
 
             // Adds up remainders through long addition done 
             for(size_t decimalIter = decimalPointStore.size() ; decimalIter > 0 ; decimalIter--) {
                 size_t decIdx = decimalIter - 1;
                 decimalPoint /= 10;
+                if constexpr (overflowStopper) {
+                    decimalPoint += decimalPointStore[decIdx]  * (uint64(1) << 59);
+                }
+                else {
+                    decimalPoint += decimalPointStore[decIdx]  * mult;
+                }
+
+                // Rounding logic
                 if(decimalIter == 1 && decimalPoint % 10 >= 5) {
                     decimalPoint += 10;
                 }
-                decimalPoint += decimalPointStore[decIdx]  * mult;
             }
             
-            if constexpr (!overflowStopper) {
-                decimalPoint /= 10;
+            decimalPoint /= 10;
+            if constexpr (overflowStopper) {
+                decimalPoint <<= (DecimalBits - 59);
             }
+
+            // Checks to make sure that rounding won't result in overflow
+            ASSERT(!atLimit || (decimalPoint < (uint64(1) << DecimalBits)));
         }
 
         uint64 final = (integerPoint << DecimalBits) + decimalPoint;
