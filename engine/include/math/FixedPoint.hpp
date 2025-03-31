@@ -67,7 +67,7 @@ public:
 
     // Used for FixedPoint string literals.
     // Will fail on too high a number.
-    // It can at most be precise to 59 bits to stop overflow
+    // It can at most be precise to 59 decimal bits due to overflow restrictions
     constexpr FixedPoint(const char* str) {
         // Checks if reader has anything to read
         ASSERT(strlen(str) >= 0);
@@ -213,6 +213,10 @@ public:
 
             // Checks to make sure that rounding won't result in overflow
             ASSERT(!atLimit || (decimalPoint < (uint64(1) << DecimalBits)));
+
+            // Checks to see if any value at all is recorded in case of overflow at negative
+            // (Two's compliment adds a value of space to the int point if decimal point is clear)
+            ASSERT(!(atLimit && negative && decimalPoint > 0));
         }
 
         uint64 final = (integerPoint << DecimalBits) + decimalPoint;
@@ -250,23 +254,73 @@ public:
         return 0;
     }
 
-    operator float () {
-        if constexpr (FLOAT_IEEE754_REP) {
-            //TODO
-            return 0.0f;
+    // Packs base int into a unsigned int that can be bitcasted into a floating point number in IEEE 754 format
+    // We don't need to be as cautious in terms of accounting for all possible variations of this, we only need to ensure that it works for float and double
+    template <FloatingPoint retFloat, UnsignedInt uFinalInt, UnsignedInt uCorInt, size_t mantissaSize, typename = std::enable_if_t<sizeof(retFloat) == sizeof(uFinalInt) && sizeof(uFinalInt) <= sizeof(uCorInt)>>
+    inline retFloat processFloatBits() {
+        // Defining Constexpr variables
+        // 1 bits for everything in mantissa bit space
+        constexpr uCorInt mantissaOp = std::numeric_limits<uCorInt>::max() >> ((sizeof(uCorInt) * 8) - mantissaSize);
+        // The value that represents 0 for the specific floating point
+        constexpr uFinalInt zeroPoint = (uFinalInt(1) << ((sizeof(uFinalInt) * 8) - mantissaSize - 2)) - 1;
+
+        // Handles 0 edge case
+        if(m_baseInt == 0) {
+            return retFloat(0);
+        }
+
+        // Takes away sign from number in order to allow for bit casting operations
+        bool negative = m_baseInt < 0;
+        uCorInt bits = uCorInt(negative ? m_baseInt * -1 : m_baseInt);
+        uint8 width = std::bit_width(bits);
+
+        // Shifts the mantissa into place
+        int8 bitDiff = width - mantissaSize;
+        if(bitDiff > 0) {
+            bits >>= bitDiff - 1;
         }
         else {
-            return m_baseInt/((float)(1 << (1 + DecimalBits)));
+            bits <<= -bitDiff + 1;
+        }
+        bits &= mantissaOp;
+
+        // Shifts exponent into place
+        bits |= ((width - DecimalBits - 1) + zeroPoint) << mantissaSize;
+        // Shifts sign into place
+        if(negative) {
+            bits |= uFinalInt(1) << ((sizeof(uFinalInt) * 8) - 1);
+        }
+
+        return std::bit_cast<retFloat>(uFinalInt(bits));
+    }
+
+    operator float () {
+        if constexpr (FLOAT_IEEE754_REP) {
+            using corUInt = std::make_unsigned<Base>::type;
+            if constexpr (sizeof(corUInt) >= sizeof(uint32)) {
+                return processFloatBits<float, uint32, corUInt, 23>();
+            }
+            else {
+                return processFloatBits<float, uint32, uint32, 23>();
+            }
+        }
+        else {
+            return m_baseInt/((float)(1 << DecimalBits));
         }
     }
 
     operator double () {
         if constexpr (FLOAT_IEEE754_REP) {
-            //TODO
-            return 0.0;
+            using corUInt = std::make_unsigned<Base>::type;
+            if constexpr (sizeof(corUInt) >= sizeof(uint64)) {
+                return processFloatBits<float, uint64, corUInt, 52>();
+            }
+            else {
+                return processFloatBits<float, uint64, uint64, 52>();
+            }
         }
         else {
-            return m_baseInt/((double)(1 << (1 + DecimalBits)));
+            return m_baseInt/((double)(1 << DecimalBits));
         }
     }
     #pragma endregion

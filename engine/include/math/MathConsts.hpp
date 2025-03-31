@@ -6,9 +6,8 @@
 #include <cstdint>
 #include <array>
 
-// Typedefs and handles that deal with the byte sizes that integers come in
-#pragma region Integer Types
-// Concepts that restricts to a certain type of integer
+// Typedefs and handles that deal with the types that similar numbers come in
+#pragma region Types
 template <typename T>
 concept Int = std::is_integral_v<T>;
 
@@ -17,6 +16,9 @@ concept SignedInt = std::is_integral_v<T> && std::is_signed_v<T>;
 
 template <typename T>
 concept UnsignedInt = std::is_integral_v<T> && std::is_unsigned_v<T>;
+
+template <typename T>
+concept FloatingPoint = std::is_floating_point_v<T>;
 
 // Typedefs that simplifies integer name
 typedef int8_t int8;

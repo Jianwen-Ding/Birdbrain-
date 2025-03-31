@@ -12,33 +12,6 @@
     class DetMathInt {
 
     public:
-        // TBD: A ->
-
-        // TBD: CURRENTLY ONLY RETURNS 0
-        // Finds the sin of a given angle.
-        // Angle is degrees multiplied by 10.
-        // Returns expected result multiplied by 3600.
-        static constexpr int sin(int angle){
-            return 0;
-        }
-
-        // TBD: CURRENTLY ONLY RETURNS 0
-        // Finds the cos of a given angle.
-        // Angle is degrees multiplied by 10.
-        // Returns expected result multiplied by 3600.
-        static constexpr int cos(int angle){
-            return 0;
-        }
-
-        // TBD: CURRENTLY ONLY RETURNS 0
-        // Finds the tan of a given angle.
-        // Angle is degrees multiplied by 10.
-        // Returns expected result multiplied by 3600.
-        static constexpr int tan(int angle) {
-            return 0;
-        }
-        // <-
-
         // Finds the square root of the given number and floors it to an int.
         // Warning: Do not use negative numbers. This is converted to unsigned so unexpected numbers will output.
         template <SignedInt T>
@@ -154,21 +127,5 @@
             }
             return result;
         }
-    private:
-        /* For future implementation
-        static constexpr void createSinLookup();
-
-        static constexpr void createCosLookup();
-
-        static constexpr void createTanLookup();
-
-        static constexpr void createTanLookup();
-
-        static constexpr std::array<int, 3600> sinTable { };
-
-        static constexpr std::array<int, 3600> cosTable { };
-
-        static constexpr std::array<int, 3600> tanTable { };
-        */
     };
     #endif
