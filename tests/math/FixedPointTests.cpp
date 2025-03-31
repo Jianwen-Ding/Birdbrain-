@@ -162,6 +162,9 @@
         EXPECT_EQ((4503599627370495.99951171875_fxd).getBase(), 9223372036854775807);
         EXPECT_EQ((doubleFixed("-4503599627370496.000000")).getBase(), -9223372036854775807 - 1);
         EXPECT_EQ((fixed("-8388608.000000")).getBase(), -2147483648);
+
+        EXPECT_EQ((FixedPoint<int16,5>("3.234198")).getBase(), 103);
+        EXPECT_EQ((FixedPoint<int8,7>("0.848352")).getBase(), 109);
     }
     
     TEST(FixedPoint, reachAssertFail) {
@@ -214,6 +217,9 @@
         EXPECT_EQ((float)0.71875_fxd, 0.71875f);
         EXPECT_EQ((float)4503599627370495_fxd, 4503599358935040.0f);
         EXPECT_EQ((float)doubleFixed("-4503599627370496"), -4503599627370496.0f);
+
+        EXPECT_EQ((float)(FixedPoint<int16,5>("3.234198")), 3.21875f);
+        EXPECT_EQ((float)(FixedPoint<int8,7>("0.848352")), 0.8515625f);
     }
 
     TEST(FixedPoint, doubleFloatingPointCast) {
@@ -242,6 +248,9 @@
         EXPECT_EQ((float)0.71875_fxd, 0.71875);
         EXPECT_EQ((float)4503599627370495_fxd, 4503599358935040);
         EXPECT_EQ((float)doubleFixed("-4503599627370495"), -4503599358935040);
+
+        EXPECT_EQ((float)(FixedPoint<int16,5>("3.234198")), 3.21875);
+        EXPECT_EQ((float)(FixedPoint<int8,7>("0.848352")), 0.8515625);
     }
 #pragma endregion
 
