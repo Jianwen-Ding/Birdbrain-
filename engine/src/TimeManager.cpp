@@ -1,5 +1,4 @@
 #include "TimeManager.hpp"
-#include "iostream"
 
 float TimeManager::deltaTime = 0;
 float TimeManager::lastTime = 0;

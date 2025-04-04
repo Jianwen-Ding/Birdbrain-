@@ -1,13 +1,5 @@
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-
 #include <cstdlib>
 #include <ctime>
-
-#include <iostream>
-#include <vector>
-#include <bitset>
-#include <queue>
 
 // for the ball game we make with the ECS
 #define BALL_RADIUS 300

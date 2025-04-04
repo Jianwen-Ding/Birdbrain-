@@ -14,10 +14,10 @@ struct Color {
     uint8 b{ 0 };
 
     // Constructs a color with the given RGB values
-    Color(uint8 r, uint8 g, uint8 b);
+    Color(uint8 r, uint8 g, uint8 b) : r(r), g(g), b(b) {};
 
     // Constructs a pure black color
-    Color();
+    Color() {};
 };
 
 #endif 

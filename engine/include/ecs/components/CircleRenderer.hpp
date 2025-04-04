@@ -1,9 +1,6 @@
 #ifndef CIRCLERENDERER_HPP
 #define CIRCLERENDERER_HPP
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-
 #include "Color.hpp"
 #include "TransformComponent.hpp"
 #include "ComponentReader.hpp"

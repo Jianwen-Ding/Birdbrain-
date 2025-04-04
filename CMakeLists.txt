@@ -23,8 +23,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Link libraries
-find_package(SFML 2.5 COMPONENTS graphics audio REQUIRED)
-target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-audio)
+# find_package(SFML 2.6 COMPONENTS graphics audio REQUIRED)
+# target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-audio)
 
 include(CTest)
 add_subdirectory(./tests)

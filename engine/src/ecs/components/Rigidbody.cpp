@@ -1,7 +1,5 @@
 #include "Rigidbody.hpp"
 
-#include <iostream>
-
 void RigidBodyBehavior::start(Rigidbody* givenComp, EntityID givenEnt){
     givenComp->m_givenTransform = m_sceneState->Get<TransformComponent>(givenEnt);
 }

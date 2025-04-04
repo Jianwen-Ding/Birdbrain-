@@ -19,8 +19,8 @@ function (test_insert test_name test_exec)
   target_link_libraries(
     ${test_name} PUBLIC
     GTest::gtest_main
-    sfml-graphics 
-    sfml-audio
+    # sfml-graphics 
+    # sfml-audio
   )
 
   target_include_directories(${test_name} PUBLIC

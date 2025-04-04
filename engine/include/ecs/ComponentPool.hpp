@@ -1,9 +1,6 @@
 #ifndef COMPONENTPOOL_HPP
 #define COMPONENTPOOL_HPP
 
-#include <iostream>
-#include <vector>
-#include <bitset>
 #include "ECSConsts.hpp"
 
 // Responsible for allocating contiguous memory for the components

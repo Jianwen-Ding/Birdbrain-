@@ -1,16 +1,14 @@
 #ifndef ECSCONSTS_HPP
 #define ECSCONSTS_HPP
 
-#include <iostream>
-#include <vector>
 #include <bitset>
 
 #include "MathConsts.hpp"
 
-typedef uint64_t EntityID;
-static const uint32_t MAX_COMPONENTS = 32;
+typedef uint64 EntityID;
+static const uint32 MAX_COMPONENTS = 32;
 typedef std::bitset<MAX_COMPONENTS> ComponentMask;
-static const uint32_t MAX_ENTITIES = 3000;
+static const uint32 MAX_ENTITIES = 3000;
 
 /*
 * ID FUNCTIONALITY 
