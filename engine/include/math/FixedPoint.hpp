@@ -11,15 +11,17 @@
 // This class defines a fixed point number,
 // this takes an integer class and allocates a number of bits to define what is below the decimal.
 // Used to allow for decimal math without potential determinism problems of floating point math. 
-template <SignedInt Base, uint8 DecimalBits, typename = std::enable_if_t<DecimalBits <= (sizeof(Base) * 8) - 1>>
+template <Int Base, uint8 DecimalBits, typename = std::enable_if_t<DecimalBits <= (sizeof(Base) * 8) - 1>>
 struct FixedPoint {
 
 private:
+    static constexpr bool isSigned = std::is_signed_v<Base>;
+
     Base m_baseInt{ 0 };
 
     // >>> Private helper functions made to assist public functions <<<
     #pragma region Helpers
-        template <SignedInt Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
+        template <Int Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
         constexpr FixedPoint(Base2 base, bool direct) : FixedPoint(base){
             if (direct) { 
                 m_baseInt = base;
@@ -36,7 +38,7 @@ public:
     #pragma region Constructors
     constexpr FixedPoint() : m_baseInt( 0 ) {};
 
-    template <SignedInt Base2, uint8 DecimalBits2>
+    template <Int Base2, uint8 DecimalBits2>
     constexpr FixedPoint(FixedPoint<Base2, DecimalBits2>& org) {
         // 
         if constexpr ((!std::is_same_v<Base, Base2> || (DecimalBits != DecimalBits2))) {
@@ -48,7 +50,7 @@ public:
         }
     };
 
-    template <SignedInt Base2, uint8 DecimalBits2>
+    template <Int Base2, uint8 DecimalBits2>
     constexpr FixedPoint(FixedPoint<Base, DecimalBits>&& org) {
         //
         if constexpr ((!std::is_same_v<Base, Base2> || (DecimalBits != DecimalBits2))) {
@@ -60,7 +62,7 @@ public:
         }
     };
 
-    template <SignedInt Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
+    template <Int Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
     constexpr FixedPoint(Base2 base) {
         m_baseInt = base >> DecimalBits;
     }
@@ -80,6 +82,7 @@ public:
         for(uint8 charIter = 0 ; charIter < 255  && charIter < std::strlen(str) ; charIter++) {
             // Checks for negative number
             if(charIter == 0) {
+                ASSERT(isSigned);
                 if(str[0] == '-') {
                     negative = true;
                     continue;
@@ -313,10 +316,10 @@ public:
         if constexpr (FLOAT_IEEE754_REP) {
             using corUInt = std::make_unsigned<Base>::type;
             if constexpr (sizeof(corUInt) >= sizeof(uint64)) {
-                return processFloatBits<float, uint64, corUInt, 52>();
+                return processFloatBits<double, uint64, corUInt, 52>();
             }
             else {
-                return processFloatBits<float, uint64, uint64, 52>();
+                return processFloatBits<double, uint64, uint64, 52>();
             }
         }
         else {
@@ -333,11 +336,19 @@ public:
 
 typedef FixedPoint<int, 8> fixed;
 typedef FixedPoint<int64, 11> doubleFixed;
+typedef FixedPoint<int, 30> radian;
 
+// Converts text into a designated radian uint
+constexpr radian operator"" _fxr(const char* str) {
+    return radian(str);
+}
+
+// Converts text into a double precision fixed point number
 constexpr doubleFixed operator"" _fxd(const char* str) {
     return doubleFixed(str);
 }
 
+// Converts text into a single precision fixed point number
 constexpr fixed operator"" _fx(const char* str) {
     return fixed(str);
 }
