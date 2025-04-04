@@ -38,9 +38,9 @@ function (test_insert test_name test_exec)
     ${CMAKE_SOURCE_DIR}/tests/include/math
     ${CMAKE_SOURCE_DIR}/tests/include/ecs
     ${CMAKE_SOURCE_DIR}/tests/include/ecs/components
-)
+  )
 
-add_test(${FIN_NAME} ${test_name})
+  add_test(${FIN_NAME} ${test_name})
 endfunction()
 
 test_insert(main_test main_test.cpp)

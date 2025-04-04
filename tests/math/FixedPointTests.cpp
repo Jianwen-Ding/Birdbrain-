@@ -220,37 +220,49 @@
 
         EXPECT_EQ((float)(FixedPoint<int16,5>("3.234198")), 3.21875f);
         EXPECT_EQ((float)(FixedPoint<int8,7>("0.848352")), 0.8515625f);
+
+        EXPECT_EQ((float)(FixedPoint<int64,5>("3.234198")), 3.21875f);
+        EXPECT_EQ((float)(FixedPoint<int64,7>("0.848352")), 0.8515625f);
+
+        EXPECT_EQ((float)(FixedPoint<int64,59>("0.0009720075980754923350435348083919961936771869659423828125")), 0.0009720075759105384349822998046875f);
+        EXPECT_EQ((float)(FixedPoint<int64,39>("1019.22383915960745071060955524444580078125")), 1019.22381591796875f);
     }
 
     TEST(FixedPoint, doubleFloatingPointCast) {
-        EXPECT_EQ((float)0_fx, 0);
-        EXPECT_EQ((float)2.6875_fx, 2.6875);
-        EXPECT_EQ((float)473.1875_fx, 473.1875);
-        EXPECT_EQ((float)-2.6875_fx, -2.6875);
-        EXPECT_EQ((float)-473.1875_fx, -473.1875);
-        EXPECT_EQ((float)-121138.1875_fx, -121138.1875);
-        EXPECT_EQ((float)121138.1875_fx, 121138.1875);
-        EXPECT_EQ((float)-0.71875_fx, -0.71875);
-        EXPECT_EQ((float)0.71875_fx, 0.71875);
-        EXPECT_EQ((float)0.71875_fx, 0.71875);
-        EXPECT_EQ((float)182.023112_fx, 182.0234375);
-        EXPECT_EQ((float)8388607_fx, 8388607.0);
+        EXPECT_EQ((double)0_fx, 0);
+        EXPECT_EQ((double)2.6875_fx, 2.6875);
+        EXPECT_EQ((double)473.1875_fx, 473.1875);
+        EXPECT_EQ((double)-2.6875_fx, -2.6875);
+        EXPECT_EQ((double)-473.1875_fx, -473.1875);
+        EXPECT_EQ((double)-121138.1875_fx, -121138.1875);
+        EXPECT_EQ((double)121138.1875_fx, 121138.1875);
+        EXPECT_EQ((double)-0.71875_fx, -0.71875);
+        EXPECT_EQ((double)0.71875_fx, 0.71875);
+        EXPECT_EQ((double)0.71875_fx, 0.71875);
+        EXPECT_EQ((double)182.023112_fx, 182.0234375);
+        EXPECT_EQ((double)8388607_fx, 8388607.0);
 
-        EXPECT_EQ((float)0_fxd, 0);
-        EXPECT_EQ((float)0.11212121_fxd, 0.1123046875);
-        EXPECT_EQ((float)2.6875_fxd, 2.6875);
-        EXPECT_EQ((float)473.1875_fxd, 473.1875);
-        EXPECT_EQ((float)-2.6875_fxd, -2.6875);
-        EXPECT_EQ((float)-473.1875_fxd, -473.1875);
-        EXPECT_EQ((float)-121138.1875_fxd, -121138.1875);
-        EXPECT_EQ((float)121138.1875_fxd, 121138.1875);
-        EXPECT_EQ((float)-0.71875_fxd, -0.71875);
-        EXPECT_EQ((float)0.71875_fxd, 0.71875);
-        EXPECT_EQ((float)4503599627370495_fxd, 4503599358935040);
-        EXPECT_EQ((float)doubleFixed("-4503599627370495"), -4503599358935040);
+        EXPECT_EQ((double)0_fxd, 0);
+        EXPECT_EQ((double)0.11212121_fxd, 0.1123046875);
+        EXPECT_EQ((double)2.6875_fxd, 2.6875);
+        EXPECT_EQ((double)473.1875_fxd, 473.1875);
+        EXPECT_EQ((double)-2.6875_fxd, -2.6875);
+        EXPECT_EQ((double)-473.1875_fxd, -473.1875);
+        EXPECT_EQ((double)-121138.1875_fxd, -121138.1875);
+        EXPECT_EQ((double)121138.1875_fxd, 121138.1875);
+        EXPECT_EQ((double)-0.71875_fxd, -0.71875);
+        EXPECT_EQ((double)0.71875_fxd, 0.71875);
+        EXPECT_EQ((double)4503599627370494_fxd, 4503599627370494.0);
+        EXPECT_EQ((double)doubleFixed("-4503599627370496"), -4503599627370496.0);
 
-        EXPECT_EQ((float)(FixedPoint<int16,5>("3.234198")), 3.21875);
-        EXPECT_EQ((float)(FixedPoint<int8,7>("0.848352")), 0.8515625);
+        EXPECT_EQ((double)(FixedPoint<int16,5>("3.234198")), 3.21875);
+        EXPECT_EQ((double)(FixedPoint<int8,7>("0.848352")), 0.8515625);
+
+        EXPECT_EQ((double)(FixedPoint<int64,5>("3.234198")), 3.21875);
+        EXPECT_EQ((double)(FixedPoint<int64,7>("0.848352")), 0.8515625);
+
+        EXPECT_EQ((double)(FixedPoint<int64,59>("0.0009720075980754923350435348083919961936771869659423828125")), 0.0009720075980754923350435348083919961936771869659423828125);
+        EXPECT_EQ((double)(FixedPoint<int64,39>("1019.22383915960745071060955524444580078125")), 1019.22383915960745071060955524444580078125);
     }
 #pragma endregion
 
