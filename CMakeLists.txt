@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30.4)
+cmake_minimum_required(VERSION 4.0.0)
 
 project(BirdBrainEngine)
 set(CMAKE_CXX_STANDARD 20)
@@ -15,7 +15,7 @@ add_executable(${PROJECT_NAME} engine/main.cpp ${CPP_SOURCES} ${C_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_SOURCE_DIR}/engine/include
     ${CMAKE_SOURCE_DIR}/engine/include/rendering
-    ${CMAKE_SOURCE_DIR}/engine/include/rendering/SFML
+    ${CMAKE_SOURCE_DIR}/engine/include/rendering/SDL
     ${CMAKE_SOURCE_DIR}/engine/include/input
     ${CMAKE_SOURCE_DIR}/engine/include/math
     ${CMAKE_SOURCE_DIR}/engine/include/ecs
@@ -23,8 +23,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Link libraries
-# find_package(SFML 2.6 COMPONENTS graphics audio REQUIRED)
-# target_link_libraries(${PROJECT_NAME} sfml-graphics sfml-audio)
+find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
+find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
+
+if(TARGET SDL2::SDL2main)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2main dl)
+endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 dl)
 
 include(CTest)
 add_subdirectory(./tests)

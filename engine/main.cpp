@@ -18,7 +18,7 @@
 #include "TransformComponent.hpp"
 
 // Loads Renderer
-#include "SfmlRenderWindow.hpp"
+#include "SdlWindow.hpp"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -32,10 +32,10 @@ float RandInBetween(float LO, float HI)
 }
 
 int main() {
-  SfmlRenderWindow::SfmlRenderWindowBuilder builder;
+  SdlWindow::SdlWindowBuilder builder;
   builder.setBuildWindowWidth(WINDOW_WIDTH);
   builder.setBuildWindowHeight(WINDOW_HEIGHT);
-  SfmlRenderWindow window = builder.build();
+  SdlWindow window = builder.build();
   srand (static_cast <unsigned> (time(0)));
   
   std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
@@ -71,6 +71,7 @@ int main() {
     window.pollEvent();
     sceneManager.update();
     TimeManager::update();
+    LOG((1.0f / TimeManager::getDelta()));
     window.renderScene(scene);
   }
 }

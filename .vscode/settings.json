@@ -71,7 +71,8 @@
         "unordered_set": "cpp",
         "cassert": "cpp",
         "condition_variable": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "memory": "cpp"
     },
     "makefile.makefilePath": "${workspace}/out/build/Makefile",
     "cmake.ctestPath": "ctest",

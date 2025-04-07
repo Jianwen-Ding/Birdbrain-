@@ -19,21 +19,23 @@ function (test_insert test_name test_exec)
   target_link_libraries(
     ${test_name} PUBLIC
     GTest::gtest_main
-    # sfml-graphics 
-    # sfml-audio
   )
+  if(TARGET SDL2::SDL2main)
+      target_link_libraries(${test_name} PRIVATE SDL2::SDL2main dl)
+  endif()
+  target_link_libraries(${test_name} PRIVATE SDL2::SDL2 dl)
 
   target_include_directories(${test_name} PUBLIC
     ${CMAKE_SOURCE_DIR}/engine/include
     ${CMAKE_SOURCE_DIR}/engine/include/rendering
-    ${CMAKE_SOURCE_DIR}/engine/include/rendering/SFML
+    ${CMAKE_SOURCE_DIR}/engine/include/rendering/SDL
     ${CMAKE_SOURCE_DIR}/engine/include/input
     ${CMAKE_SOURCE_DIR}/engine/include/math
     ${CMAKE_SOURCE_DIR}/engine/include/ecs
     ${CMAKE_SOURCE_DIR}/engine/include/ecs/components
     ${CMAKE_SOURCE_DIR}/tests/include
     ${CMAKE_SOURCE_DIR}/tests/include/rendering
-    ${CMAKE_SOURCE_DIR}/tests/include/rendering/SFML
+    ${CMAKE_SOURCE_DIR}/tests/include/rendering/SDL
     ${CMAKE_SOURCE_DIR}/tests/include/input
     ${CMAKE_SOURCE_DIR}/tests/include/math
     ${CMAKE_SOURCE_DIR}/tests/include/ecs

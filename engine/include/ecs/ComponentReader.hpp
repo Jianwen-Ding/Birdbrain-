@@ -35,7 +35,7 @@ class ComponentReader : public ComponentReaderBase<> {
         // The behavior that a component initiates every frame
         virtual void update(ComponentType* givenComp, EntityID givenEnt) = 0;
 
-        // The Scene to gleam relavant components to update from
+        // The Scene to gleam relevant components to update from
         SceneView<ComponentType> m_givenSceneView;
 };
 #endif

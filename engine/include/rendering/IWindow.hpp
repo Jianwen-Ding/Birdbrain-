@@ -1,5 +1,5 @@
-#ifndef IRENDERWINDOW_HPP
-#define IRENDERWINDOW_HPP
+#ifndef IWINDOW_HPP
+#define IWINDOW_HPP
 
 #include "InputCycle.hpp"
 #include "Scene.hpp"
@@ -8,7 +8,7 @@
 // Represents a window on the player's screen.
 // Allow's the functionality of rendering a scene onto the window
 // and gathering input from the window.
-class IRenderWindow {
+class IWindow {
     public:
 
         // Gets the background color of the window.
@@ -29,13 +29,15 @@ class IRenderWindow {
         // Renders the scene given to it.
         virtual void renderScene(std::shared_ptr<Scene> givenScene) = 0;
 
-        virtual ~IRenderWindow();
+        virtual ~IWindow();
 
         // Sets a number of parameters of the render window.
         // Template T is the class that implements this interface.
         template <typename T>
-        class IRenderWindowBuilder {
+        class IWindowBuilder {
             public:
+                virtual ~IWindowBuilder();
+
                 // Sets the background color of the window to be created.
                 virtual void setBuildBackColor(Color setColor) = 0;
 
@@ -51,12 +53,11 @@ class IRenderWindow {
                 // Builds a window based on parameters.
                 virtual T build() = 0;
 
-                virtual ~IRenderWindowBuilder();
         };
 };
 
 template <typename T>
-IRenderWindow::IRenderWindowBuilder<T>::~IRenderWindowBuilder() {
+IWindow::IWindowBuilder<T>::~IWindowBuilder() {
 }
 
 #endif
