@@ -249,28 +249,73 @@
 // Tests for casting to different numeric types
 #pragma region Casting
     TEST(FixedPointCasting, sameFixedPointCast) {
-        EXPECT_EQ(fixed(213123.2323_fx), 213123.2323_fx);
-        EXPECT_EQ(fixed(213.58923_fx), 213.58923_fx);
-        EXPECT_EQ(fixed(-213123.2323_fx), -213123.2323_fx);
-        EXPECT_EQ(fixed(-213.58923_fx), -213.58923_fx);
+        EXPECT_EQ(fixed(213123.2323_fx).getBase(), (213123.2323_fx).getBase());
+        EXPECT_EQ(fixed(213.58923_fx).getBase(), (213.58923_fx).getBase());
+        EXPECT_EQ(fixed(-213123.2323_fx).getBase(), (-213123.2323_fx).getBase());
+        EXPECT_EQ(fixed(-213.58923_fx).getBase(), (-213.58923_fx).getBase());
 
-        EXPECT_EQ(doubleFixed(13123.2323_fxd), 13123.2323_fxd);
-        EXPECT_EQ(doubleFixed(213.58923_fxd), 213.58923_fxd);
-        EXPECT_EQ(doubleFixed(-213123.2323_fxd), -213123.2323_fxd);
-        EXPECT_EQ(doubleFixed(-213.58923_fxd), -213.58923_fxd);
+        EXPECT_EQ(doubleFixed(13123.2323_fxd).getBase(), (13123.2323_fxd).getBase());
+        EXPECT_EQ(doubleFixed(213.58923_fxd).getBase(), (213.58923_fxd).getBase());
+        EXPECT_EQ(doubleFixed(-213123.2323_fxd).getBase(), (-213123.2323_fxd).getBase());
+        EXPECT_EQ(doubleFixed(-213.58923_fxd).getBase(), (-213.58923_fxd).getBase());
 
-        EXPECT_EQ(radian(0.234234_fxr), 0.234234_fxr);
-        EXPECT_EQ(radian(1.5634_fxr), 1.5634_fxr);
-        EXPECT_EQ(radian(0.854342_fxr), 0.854342_fxr);
-        EXPECT_EQ(radian(1.2999_fxr), 1.2999_fxr);
+        EXPECT_EQ(radian(0.234234_fxr).getBase(), (0.234234_fxr).getBase());
+        EXPECT_EQ(radian(1.5634_fxr).getBase(), (1.5634_fxr).getBase());
+        EXPECT_EQ(radian(0.854342_fxr).getBase(), (0.854342_fxr).getBase());
+        EXPECT_EQ(radian(1.2999_fxr).getBase(), (1.2999_fxr).getBase());
     }
 
-    TEST(FixedPointCasting, crossFixedPointCast) {
+    TEST(FixedPointCasting, crossFixedPointExactTest) {
+        EXPECT_EQ(doubleFixed(473.1875_fx).getBase(), (473.1875_fxd).getBase());
+        EXPECT_EQ(doubleFixed(43.1875_fx).getBase(), (43.1875_fxd).getBase());
+        EXPECT_EQ(doubleFixed(-2.6875_fx).getBase(), (-2.6875_fxd).getBase());
+        EXPECT_EQ(doubleFixed(-32.1875_fx).getBase(), (-32.1875_fxd).getBase());
 
+        EXPECT_EQ(fixed(473.1875_fxd).getBase(), (473.1875_fx).getBase());
+        EXPECT_EQ(fixed(43.1875_fxd).getBase(), (43.1875_fx).getBase());
+        EXPECT_EQ(fixed(-2.6875_fxd).getBase(), (-2.6875_fx).getBase());
+        EXPECT_EQ(fixed(-32.1875_fxd).getBase(), (-32.1875_fx).getBase());
+
+        EXPECT_EQ(radian(0.37109375_fxd).getBase(), (0.37109375_fxr).getBase());
+        EXPECT_EQ(radian(1.99609375_fxd).getBase(), (1.99609375_fxr).getBase());
+        EXPECT_EQ(radian(0.6875_fxd).getBase(), (0.6875_fxr).getBase());
+        EXPECT_EQ(radian(1.1875_fxd).getBase(), (1.1875_fxr).getBase());
+
+        EXPECT_EQ(radian(0.37109375_fx).getBase(), (0.37109375_fxr).getBase());
+        EXPECT_EQ(radian(1.99609375_fx).getBase(), (1.99609375_fxr).getBase());
+        EXPECT_EQ(radian(0.6875_fx).getBase(), (0.6875_fxr).getBase());
+        EXPECT_EQ(radian(1.1875_fx).getBase(), (1.1875_fxr).getBase());
+    }
+
+    TEST(FixedPointCasting, crossFixedPointOverflow) {
+        EXPECT_EQ(radian(12312231.37109375_fxd).getBase(), (1.37109375_fxr).getBase());
+        EXPECT_EQ(radian(39081.25_fxd).getBase(), (1.25_fxr).getBase());
+        EXPECT_EQ(radian(12312232.37109375_fxd).getBase(), (0.37109375_fxr).getBase());
+        EXPECT_EQ(radian(39084.25_fxd).getBase(), (0.25_fxr).getBase());
+
+        EXPECT_EQ(radian(223.37109375_fx).getBase(), (1.37109375_fxr).getBase());
+        EXPECT_EQ(radian(39081.25_fx).getBase(), (1.25_fxr).getBase());
+        EXPECT_EQ(radian(1212.37109375_fx).getBase(), (0.37109375_fxr).getBase());
+        EXPECT_EQ(radian(39084.25_fx).getBase(), (0.25_fxr).getBase());
+
+        EXPECT_EQ((FixedPoint<uint8, 4, false>(123221.125_fxd)).getBase(), (FixedPoint<uint8, 4, false>("5.125")).getBase());
+        EXPECT_EQ((FixedPoint<uint32, 8, false>(939123233231242.00390625_fxd)).getBase(), (FixedPoint<uint32, 8, false>("12030346.00390625")).getBase());
+        EXPECT_EQ((FixedPoint<uint16, 16, false>(39084_fxd)).getBase(), (FixedPoint<uint16, 16, false>("0")).getBase());
+        EXPECT_EQ((FixedPoint<uint16, 15, false>(39084.125_fxd)).getBase(), (FixedPoint<uint16, 15, false>("0.125")).getBase());
     }
 
     TEST(FixedPointCasting, crossFixedPointCastFailure) {
+        #if DEBUGGING
+        EXPECT_DEATH(fixed(-16777216.00390625_fxd).getBase(), ".*");
+        EXPECT_EQ(fixed(-16777216_fxd).getBase(), fixed("-16777216").getBase());
 
+        EXPECT_DEATH(fixed(16777215.99999999_fxd).getBase(),".*");
+        EXPECT_EQ(fixed(16777215.99609375_fxd).getBase(), (16777215.99609375_fx).getBase());
+
+        EXPECT_DEATH(radian(-0.37109375_fxd).getBase(), ".*");
+        EXPECT_DEATH(radian(-1.1875_fx).getBase(), ".*");
+        #endif
+        EXPECT_TRUE(true);
     }
 
     TEST(FixedPointCasting, signedIntegerCast) {

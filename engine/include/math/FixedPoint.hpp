@@ -6,18 +6,23 @@
 #include "DetMathInt.hpp"
 
 #include <bit>
+#include <utility>
 #include <cstddef>
 
 // This class defines a fixed point number.
 // This takes an integer class and allocates a number of bits to define what is past the decimal mark.
 // Used to allow for decimal math without potential determinism problems of floating point math. 
 // One way of thinking of the value of the class is {Store Base Number} / 2^(Decimal Bits).
-// Any FixedPoint with OverflowGuard enabled that will fail on overflow detected if debugging is also enabled.
-// Overflow for signed numbers is undefined behavior so for those signed FixedPoints then guard is needed.
-template <Int Base, uint8 DecimalBits, bool OverflowGuard>
+// Any FixedPoint with FlowGuard enabled that will fail on overflow/underflow detected if debugging is also enabled.
+// Overflow/underflow for signed numbers is undefined behavior so for those signed FixedPoints then guard is needed.
+template <Int Base, uint8 DecimalBits, bool FlowGuard>
 struct FixedPoint {
 
-private:
+protected:
+
+    template<Int, uint8 , bool>
+    friend class FixedPoint;
+
     static constexpr bool m_isSigned = std::is_signed_v<Base>;
     // Equivalent to 2^DecimalBits
     static constexpr Base m_divisor = Base(1) << DecimalBits;
@@ -28,8 +33,8 @@ private:
 
     // >>> These static asserts makes sure templates given to FixedPoint do work together <<<
     #pragma region Asserts
-        // Overflow for signed numbers is undefined behavior so OverflowGuard needs to be within place for those numbers.
-        static_assert(!m_isSigned || OverflowGuard);
+        // Overflow for signed numbers is undefined behavior so FlowGuard needs to be within place for those numbers.
+        static_assert(!m_isSigned || FlowGuard);
 
         // Constrains decimalBits to within size of Base
         static_assert(!m_isSigned || DecimalBits <= (sizeof(Base) * 8) - 1);
@@ -51,10 +56,10 @@ public:
         // Fixed point empty constructor leaves a value of 0
         constexpr FixedPoint() : m_baseInt( 0 ) {};
 
-        template <Int Base2, uint8 DecimalBits2, bool OverflowGuard2>
-        constexpr FixedPoint(const FixedPoint<Base2, DecimalBits2,OverflowGuard2>& org) {
+        template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+        constexpr FixedPoint(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& org) {
             // Makes sure negative signed FixedPoint does not get casted into an unsigned fixed point 
-            ASSERT(std::is_signed_v<Base2> || m_baseInt >= 0);
+            ASSERT(std::is_signed_v<Base> || org.m_baseInt >= 0);
             if constexpr (std::is_same_v<Base2,Base> && DecimalBits == DecimalBits2) {
                 m_baseInt = org.m_baseInt;
             }
@@ -62,10 +67,10 @@ public:
                 constexpr int16 decDiff = DecimalBits - DecimalBits2;
                 if constexpr (decDiff > 0) {
                     // Makes sure that FixedPoint number does not cast into an overflow
-                    ASSERT(!OverflowGuard2 || (std::numeric_limits<Base>::max() >> decDiff) >= org.m_baseInt);
+                    ASSERT(!FlowGuard || std::cmp_greater_equal(std::numeric_limits<Base>::max() >> decDiff, org.m_baseInt));
                     // No need to check for negative underflow for unsigned numbers or positive
                     if constexpr (m_isSigned) {
-                        ASSERT(!OverflowGuard2 ||(std::numeric_limits<Base>::min() / (1 << decDiff)) <= org.m_baseInt); 
+                        ASSERT(!FlowGuard || std::cmp_less_equal(std::numeric_limits<Base>::min() >> decDiff,  org.m_baseInt)); 
                     }
 
                     m_baseInt = Base(org.m_baseInt) << decDiff;
@@ -74,13 +79,17 @@ public:
                     // Makes sure that FixedPoint number does not cast into an overflow
                     constexpr int16 reverseDecDiff = -decDiff;
                     // Makes sure that FixedPoint number does not cast into an overflow
-                    ASSERT(!OverflowGuard2 ||(org.m_baseInt >> reverseDecDiff) <= std::numeric_limits<Base>::max());
-                    // No need to check for negative underflow for unsigned numbers
+                    ASSERT(!FlowGuard || std::cmp_less_equal(org.m_baseInt >> reverseDecDiff, std::numeric_limits<Base>::max()));
                     if constexpr (std::is_signed_v<Base2>) {
-                        ASSERT(!OverflowGuard2 ||(org.m_baseInt / (1 << reverseDecDiff)) >= std::numeric_limits<Base>::min()); 
-                    }
+                        constexpr Base2 reverseDecDiffDivisor = (1 << reverseDecDiff);
+                        // Check for negative underflow for signed numbers
+                        ASSERT(!FlowGuard || std::cmp_greater_equal(org.m_baseInt >> reverseDecDiff, std::numeric_limits<Base>::min())); 
 
-                    m_baseInt = Base2(m_baseInt) >> reverseDecDiff;
+                        m_baseInt = org.m_baseInt / reverseDecDiffDivisor;
+                    }
+                    else {
+                        m_baseInt = org.m_baseInt >> reverseDecDiff;
+                    }
                 }
             }
         };
@@ -89,15 +98,9 @@ public:
         constexpr FixedPoint(Base2 base) {
             // A negative number cannot be used to construct a unsigned fixed point
             ASSERT(m_isSigned || base >= 0);
-            // Makes sure that base number be too large to even be stored by m_baseInt 
-            if constexpr (sizeof(Base2) >= sizeof(Base)) {
-                ASSERT(!OverflowGuard || base <= std::numeric_limits<Base>::max() >> DecimalBits);
-                ASSERT(!OverflowGuard || m_isSigned ||  base >= std::numeric_limits<Base>::min() >> DecimalBits);
-            }
-            else {
-                ASSERT(!OverflowGuard || Base(base) <= std::numeric_limits<Base>::max() >> DecimalBits);
-                ASSERT(!OverflowGuard || m_isSigned ||  Base(base) >= std::numeric_limits<Base>::min() >> DecimalBits);
-            }
+            // Makes sure that base number isn't too large to even be stored by m_baseInt 
+            ASSERT(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits));
+            ASSERT(!FlowGuard || m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits));
 
             m_baseInt = base << DecimalBits;
         }
@@ -217,7 +220,7 @@ public:
                 for(size_t integerIter = integerPointStore.size() ; integerIter > 0 ; integerIter--) {
                     integerPoint += integerPointStore[integerIter - 1] * multIter;
                     // Makes sure that integer doesn't exceed max size
-                    ASSERT(!OverflowGuard || !(multIter == maxMult && integerPointStore[integerIter - 1] > maxMostSigDigit) && integerPoint <= limit);
+                    ASSERT(!FlowGuard || !(multIter == maxMult && integerPointStore[integerIter - 1] > maxMostSigDigit) && integerPoint <= limit);
                     multIter *= 10;
                 }   
 
@@ -260,11 +263,11 @@ public:
                 }
 
                 // Checks to make sure that rounding won't result in overflow
-                ASSERT(!OverflowGuard || !atLimit || (decimalPoint < (uint64(1) << DecimalBits)));
+                ASSERT(!FlowGuard || !atLimit || (decimalPoint < (uint64(1) << DecimalBits)));
 
                 // Checks to see if any value at all is recorded in case of overflow at negative
                 // (Two's compliment adds a value of space to the int point if decimal point is clear)
-                ASSERT(!OverflowGuard || !(atLimit && negative && decimalPoint > 0));
+                ASSERT(!FlowGuard || !(atLimit && negative && decimalPoint > 0));
             }
 
             // Combines Integer point and decimal point
@@ -287,8 +290,8 @@ public:
 
     // >>> Equality Operators (==, >, <, ect) <<< 
     #pragma region Equality
-        template <typename Base2, uint8 DecimalBits2, bool OverflowGuard2>
-        constexpr bool operator ==(const FixedPoint<Base2, DecimalBits2, OverflowGuard2>& rhs) const {
+        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+        constexpr bool operator ==(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
             if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
                 return m_baseInt == rhs.m_baseInt;
             }
@@ -305,27 +308,27 @@ public:
 
     // >>> Basic Arithmetic Operators (+, -, /, ect) <<<
     #pragma region Arithmetic
-        FixedPoint<Base,DecimalBits,OverflowGuard> operator-() const {
+        FixedPoint<Base,DecimalBits,FlowGuard> operator-() const {
             static_assert(m_isSigned);
             // Due to two's compliment if signed int is equal to min number *-1 cannot happen without overflow
-            ASSERT(!OverflowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min());
+            ASSERT(!FlowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min());
 
-            return FixedPoint<Base,DecimalBits,OverflowGuard>(m_baseInt * -1, true);
+            return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt * -1, true);
         }
 
-        FixedPoint<Base,DecimalBits,OverflowGuard> operator*(FixedPoint<Base,DecimalBits,OverflowGuard> rhs) const {
+        FixedPoint<Base,DecimalBits,FlowGuard> operator*(FixedPoint<Base,DecimalBits,FlowGuard> rhs) const {
             return (rhs.m_baseInt * m_baseInt) << DecimalBits;
         } 
 
-        friend FixedPoint<Base,DecimalBits,OverflowGuard> operator*(Base lhs, const FixedPoint<Base,DecimalBits,OverflowGuard>& rhs) {
+        friend FixedPoint<Base,DecimalBits,FlowGuard> operator*(Base lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
             return (lhs << DecimalBits) / rhs.m_baseInt;
         }
 
-        FixedPoint<Base,DecimalBits,OverflowGuard> operator/(FixedPoint<Base,DecimalBits,OverflowGuard> rhs) const {
+        FixedPoint<Base,DecimalBits,FlowGuard> operator/(FixedPoint<Base,DecimalBits,FlowGuard> rhs) const {
             return (rhs.m_baseInt * m_baseInt) << DecimalBits;
         } 
 
-        friend FixedPoint<Base,DecimalBits,OverflowGuard> operator/(Base lhs, const FixedPoint<Base,DecimalBits,OverflowGuard>& rhs) {
+        friend FixedPoint<Base,DecimalBits,FlowGuard> operator/(Base lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
             return (lhs << DecimalBits) / rhs.m_baseInt;
         }
     #pragma endregion
@@ -333,9 +336,9 @@ public:
     // >>> Casts to other numeric types <<<
     #pragma region Casts
         // Casts a FixedPoint number into another FixedPoint number
-        template <Int Base2, uint8 DecimalBits2, bool OverflowGuard2>
-        operator FixedPoint<Base2, DecimalBits2, OverflowGuard2> () const {
-            return FixedPoint<Base2, DecimalBits2, OverflowGuard2>(*this);
+        template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+        operator FixedPoint<Base2, DecimalBits2, FlowGuard2> () const {
+            return FixedPoint<Base2, DecimalBits2, FlowGuard2>(*this);
         }
 
         // Truncates FixedPoint value to integer.
@@ -344,9 +347,9 @@ public:
             // Makes sure a negative number is not casted into an unsigned number
             ASSERT(std::is_signed_v<Base2> || m_baseInt >= 0);
             // Makes sure number isn't too large to be casted into specified int
-            ASSERT(!OverflowGuard || m_baseInt / m_divisor <= std::numeric_limits<Base2>::max());
+            ASSERT(!FlowGuard || m_baseInt / m_divisor <= std::numeric_limits<Base2>::max());
             if(m_isSigned) {
-                ASSERT(!OverflowGuard ||m_baseInt / m_divisor >= std::numeric_limits<Base2>::min());
+                ASSERT(!FlowGuard ||m_baseInt / m_divisor >= std::numeric_limits<Base2>::min());
             }
 
             if constexpr (m_isSigned) {
