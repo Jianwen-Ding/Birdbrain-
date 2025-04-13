@@ -6,7 +6,6 @@
 #pragma region Constructor
 
     TEST(FixedPointConstructor, copyConstructor) {
-
     }
 
     TEST(FixedPointConstructor, moveConstructor) {
@@ -356,13 +355,26 @@
         }
 
         TEST(FixedPointStringRep, stringConversionApproximateDecimal) {
+            EXPECT_EQ((1.9999999995343387126922607421875_fxr).toString(), "1.999996185302734375");
             EXPECT_EQ((1.50973500311374664306640625_fxr).toString(), "1.509735107421875");
             EXPECT_EQ((0.267951391637325286865234375_fxr).toString(), "0.26795196533203125");
             EXPECT_EQ((0.057332796044647693634033203125_fxr).toString(), "0.057331085205078125");
             EXPECT_EQ((0.0000000004656612873077392578125_fxr).toString(), "0");
-            LOG("WOW" << (FixedPoint<uint64, 64, true>("0.99999999999999999826527652402319290558807551860809326171875").getBase()));
             EXPECT_EQ((FixedPoint<uint64, 64, true>("0.99999999999999999826527652402319290558807551860809326171875")).toString(), "0.999996185302734375");
+            EXPECT_EQ((FixedPoint<uint64, 64, true>("0.4950047118264213448436857067935790155388531275093555450439453125")).toString(), "0.495006561279296875");
             EXPECT_EQ((FixedPoint<uint64, 63, true>("1.99999999999999999826527652402319290558807551860809326171875")).toString(), "1.999996185302734375");
+            EXPECT_EQ((FixedPoint<uint64, 63, true>("0.427114815286927934525999794868056369523401372134685516357421875")).toString(), "0.42711639404296875");
+            EXPECT_EQ((FixedPoint<uint64, 32, true>("18.3444416332058608531951904296875")).toString(), "18.344440460205078125");
+
+            EXPECT_EQ((FixedPoint<int32, 20, true>("2047.99999904632568359375")).toString(), "2047.999996185302734375");
+            EXPECT_EQ((FixedPoint<int32, 20, true>("2033.43611907958984375")).toString(), "2033.43611907958984375");
+            EXPECT_EQ((FixedPoint<int32, 20 , true>("-2033.43611907958984375")).toString(), "-2033.43611907958984375");
+            EXPECT_EQ((FixedPoint<int32, 20, true>("-2048")).toString(), "-2048");
+
+            EXPECT_EQ((FixedPoint<int64, 32, true>("2147483647.99999999976716935634613037109375")).toString(), "2147483647.999996185302734375");
+            EXPECT_EQ((FixedPoint<int64, 32, true>("18.3444416332058608531951904296875")).toString(), "18.344440460205078125");
+            EXPECT_EQ((FixedPoint<int64, 32, true>("-18.3444416332058608531951904296875")).toString(), "-18.344440460205078125");
+            EXPECT_EQ((FixedPoint<int64, 32, true>("-2147483648")).toString(), "-2147483648");
         }
 
 #pragma  endregion 
