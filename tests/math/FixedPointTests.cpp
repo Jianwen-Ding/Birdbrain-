@@ -248,6 +248,11 @@
             EXPECT_DEATH(radian("-1"), ".*");
             EXPECT_DEATH(radian("-0.2342342342"), ".*");
 
+            EXPECT_DEATH((FixedPoint<uint64, 64, true>("2.23423")), ".*");
+            EXPECT_DEATH((FixedPoint<uint64, 64, true>("1")), ".*");
+            EXPECT_DEATH((FixedPoint<uint64, 64, true>("0.99999999999999999999999999")), ".*");
+            EXPECT_EQ((FixedPoint<uint64, 64, true>("0.99999999999999999826527652402319290558807551860809326171875")).getBase(), uint64(18446744073709551584ull));
+
             EXPECT_DEATH((FixedPoint<uint8, 6, true>("4")), ".*");
             EXPECT_DEATH((FixedPoint<uint8, 6, true>("3.999999999999")), ".*");
             EXPECT_EQ((FixedPoint<uint8, 6, true>("3.984375")).getBase(), 255);
@@ -355,8 +360,9 @@
             EXPECT_EQ((0.267951391637325286865234375_fxr).toString(), "0.26795196533203125");
             EXPECT_EQ((0.057332796044647693634033203125_fxr).toString(), "0.057331085205078125");
             EXPECT_EQ((0.0000000004656612873077392578125_fxr).toString(), "0");
-            EXPECT_EQ((FixedPoint<uint64, 64, true>("0.9999999999999999999457898913757247782996273599565029144287109375")).toString(), "1");
-            EXPECT_EQ((FixedPoint<uint64, 64, true>("1.9999999999999999999457898913757247782996273599565029144287109375")).toString(), "1.9999980926513671875");
+            LOG("WOW" << (FixedPoint<uint64, 64, true>("0.99999999999999999826527652402319290558807551860809326171875").getBase()));
+            EXPECT_EQ((FixedPoint<uint64, 64, true>("0.99999999999999999826527652402319290558807551860809326171875")).toString(), "0.999996185302734375");
+            EXPECT_EQ((FixedPoint<uint64, 63, true>("1.99999999999999999826527652402319290558807551860809326171875")).toString(), "1.999996185302734375");
         }
 
 #pragma  endregion 

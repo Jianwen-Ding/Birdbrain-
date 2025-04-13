@@ -23,9 +23,12 @@ protected:
     friend class FixedPoint;
 
     #pragma region Constexpr
+        // A bunch of helper variables calculated at compile time 
+
         static constexpr bool m_isSigned = std::is_signed_v<Base>;
         // Equivalent to 2^DecimalBits
         static constexpr Base m_divisor = Base(1) << DecimalBits;
+        static constexpr bool m_decimalBitsMaxed = (m_isSigned && DecimalBits == sizeof(Base) * 8 - 1) || (!m_isSigned && DecimalBits == sizeof(Base) * 8);
 
         static constexpr Base findMaxIntegerPoint() {
             if constexpr (DecimalBits == 0) {
@@ -40,17 +43,34 @@ protected:
         }
 
         static constexpr Base findMinIntegerPoint() {
-            if constexpr (m_isSigned) {
-                return Base(-1) << ((sizeof(Base) * 8) - DecimalBits - 1);
+            if constexpr (DecimalBits == 0) {
+                return std::numeric_limits<Base>::min();
+            }
+            else if constexpr (m_isSigned) {
+                return (Base(-1) << ((sizeof(Base) * 8) - DecimalBits - 1));
             }
             else {
                 return 0;
             }
         }
 
+        static constexpr Base findMaxDecimalPoint() {
+            if constexpr (m_decimalBitsMaxed) {
+                return std::numeric_limits<Base>::max();
+            }
+            else {
+                return (Base(1) << DecimalBits) - 1;
+            }
+        }
+
         static constexpr Base findMinDecimalPoint() {
             if constexpr (m_isSigned) {
-                return (Base(-1) << DecimalBits);
+                if constexpr (DecimalBits == sizeof(Base) * 8 - 1) {
+                    return std::numeric_limits<Base>::min();
+                }
+                else {
+                    return (Base(-1) << DecimalBits) + 1;
+                }
             }
             else {
                 return 0;
@@ -59,7 +79,7 @@ protected:
 
         static constexpr Base m_maxIntegerPoint = findMaxIntegerPoint();
         static constexpr Base m_minIntegerPoint = findMinIntegerPoint();
-        static constexpr Base m_maxDecimalPoint = (Base(1) << DecimalBits) - 1;
+        static constexpr Base m_maxDecimalPoint = findMaxDecimalPoint();
         static constexpr Base m_minDecimalPoint = findMinDecimalPoint();
 
         static constexpr uint64 m_decimalPointMask = std::numeric_limits<uint64>::max() >> (64 - DecimalBits);
@@ -88,6 +108,17 @@ protected:
                 m_baseInt = base;
             } 
         }
+
+        // Allows decimal bit to be clamped to a certain max number, used in cases where precision needs to be sacrificed to prevent overflow.
+        template <uint8 maxNum>
+        static inline constexpr uint8 floorRepDecBit() {
+            if constexpr (DecimalBits > maxNum) {
+                return maxNum;
+            }
+            else {
+                return DecimalBits;
+            }
+        }    
     #pragma endregion
 public:
     // >>> Constructors <<<
@@ -159,7 +190,7 @@ public:
 
             std::vector<uint8> integerPointStore{ };
             std::vector<uint8> decimalPointStore{ };
-            // Will just ignore anything past 255 digits
+            // Stores and collects each digit to be processed into value
             for(uint8 charIter = 0 ; charIter < 255  && charIter < std::strlen(str) ; charIter++) {
                 // Checks for negative number
                 if(charIter == 0) {
@@ -267,23 +298,18 @@ public:
 
             // More complex part processing decimal point
             // Done through long addition to prevent overflow
+            // Will sacrifice some precision to prevent overflow if needed
+            constexpr uint8 maxDecimalPrecision = 59;
+            constexpr uint8 repDecimalBit = floorRepDecBit<maxDecimalPrecision>();
             uint64 decimalPoint = 0;
             {
-                // Will sacrifice some precision to prevent overflow if needed
-                constexpr bool overflowStopper = DecimalBits > 59;
-                
-                const uint64 mult = (uint64(1) << DecimalBits);
+                const uint64 mult = (uint64(1) << repDecimalBit);
 
-                // Adds up remainders through long addition done 
+                // Adds up remainders through long addition
                 for(size_t decimalIter = decimalPointStore.size() ; decimalIter > 0 ; decimalIter--) {
                     size_t decIdx = decimalIter - 1;
                     decimalPoint /= 10;
-                    if constexpr (overflowStopper) {
-                        decimalPoint += decimalPointStore[decIdx]  * (uint64(1) << 59);
-                    }
-                    else {
-                        decimalPoint += decimalPointStore[decIdx]  * mult;
-                    }
+                    decimalPoint += decimalPointStore[decIdx]  * mult;
 
                     // Rounding logic
                     if(decimalIter == 1 && decimalPoint % 10 >= 5) {
@@ -292,12 +318,16 @@ public:
                 }
                 
                 decimalPoint /= 10;
-                if constexpr (overflowStopper) {
-                    decimalPoint <<= (DecimalBits - 59);
+                if constexpr (DecimalBits > repDecimalBit) {
+                    if constexpr (DecimalBits == 64) {
+                        // Covers possibility that decimal bit would overflow before being checked
+                        ASSERT_LOG(!FlowGuard || decimalPoint != (uint64(1) << maxDecimalPrecision), str << " exceeds max size after rounding");
+                    }
+                    decimalPoint <<= (DecimalBits - maxDecimalPrecision);
                 }
 
                 // Checks to make sure that rounding won't result in overflow
-                ASSERT_LOG(!FlowGuard || !atLimit || (decimalPoint < (uint64(1) << DecimalBits)), str << " exceeds max size after rounding");
+                ASSERT_LOG(!FlowGuard || !atLimit || (decimalPoint <= m_maxDecimalPoint), str << " exceeds max size after rounding");
 
                 // Checks to see if any value at all is recorded in case of overflow at negative
                 // (Two's compliment adds a value of space to the int point if decimal point is clear)
@@ -305,7 +335,13 @@ public:
             }
 
             // Combines Integer point and decimal point
-            uint64 final = (integerPoint << DecimalBits) + decimalPoint;
+            uint64 final;
+            if constexpr (m_decimalBitsMaxed) {
+                final = decimalPoint;
+            }
+            else {
+                final = (integerPoint << DecimalBits) + decimalPoint;
+            }
             // Adjusts final number based on whether the number was negative or not
             if constexpr (m_isSigned) {
                 if(negative) {
@@ -378,32 +414,26 @@ public:
         }
 
         using processInt = std::make_unsigned_t<Base>;
-        static constexpr uint8 maxDecBitPrecision = 18;
-
-        // Allows numbers to be floored to decimal bit that string can be represented int
-        static inline constexpr uint8 floorRepDecBit() {
-            if constexpr (DecimalBits > maxDecBitPrecision) {
-                return maxDecBitPrecision;
-            }
-            else {
-                return DecimalBits;
-            }
-        }
+        static constexpr uint8 m_maxDecBitPrecision = 18;
 
         // Reduces code duplication of toString.
         // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
         inline std::string unsignedToString(processInt num, bool stopOverflow) {      
             // Adds integer point    
-            std::string retString = std::to_string(num >> DecimalBits);    
-            processInt intPoint = num >> DecimalBits;
+            std::string retString; 
+            if constexpr (m_decimalBitsMaxed) {
+                retString = "0";
+            }
+            else {
+                retString = std::to_string(num >> DecimalBits);    
+            }
             // Adds for decimal point and marker
-            static constexpr uint8 repDecimalBits = floorRepDecBit();
-            constexpr int16 decDiff = DecimalBits - maxDecBitPrecision;
+            static constexpr uint8 repDecimalBits = floorRepDecBit<m_maxDecBitPrecision>();
+            constexpr int16 decDiff = DecimalBits - m_maxDecBitPrecision;
 
             processInt repDecimalNum;
             if constexpr (decDiff > 0) {
                 repDecimalNum = (num & m_decimalPointMask) >> (decDiff - 1);
-                LOG("Resulting number: " << repDecimalNum);
                 // Rounding logic
                 if (repDecimalNum & 1) {
                     repDecimalNum >>= 1;
@@ -415,7 +445,6 @@ public:
                 else {
                     repDecimalNum >>= 1;
                 }
-                LOG("Resulting number: " << repDecimalNum);
             }
             else {
                 repDecimalNum = (num & m_decimalPointMask);
@@ -426,7 +455,6 @@ public:
                 uint64 cutNum;
                 bool foundCut = false;
                 uint8 fullDecLength = 0;
-                LOG("Resulting Dec Num: " << decimalNum);
                 while(decimalNum > 0) {
                     if(!foundCut && decimalNum % 10 != 0) {
                         cutNum = decimalNum;
@@ -438,11 +466,8 @@ public:
                 ASSERT_LOG(foundCut, "Despite decimalNum not being zero, a non 0 decimal could not be found");
 
                 retString += '.';
-                LOG(retString);
                 retString.resize(retString.size() + repDecimalBits - fullDecLength, '0');
-                LOG(retString);
                 retString.append(std::to_string(cutNum));
-                LOG(retString);
             }
             return retString;
         }
@@ -470,7 +495,12 @@ public:
                 }
             }
             else {
-                return unsignedToString(m_baseInt, ((m_baseInt & m_integerPointMask) >> DecimalBits) >= m_maxIntegerPoint);
+                if constexpr (m_decimalBitsMaxed) {
+                    return unsignedToString(m_baseInt, true);
+                }
+                else {
+                    return unsignedToString(m_baseInt, ((m_baseInt & m_integerPointMask) >> DecimalBits) >= m_maxIntegerPoint);
+                }
             }
         }
     #pragma endregion
