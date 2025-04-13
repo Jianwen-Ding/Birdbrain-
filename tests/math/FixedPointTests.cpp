@@ -5,6 +5,22 @@
 // Tests if constructors lead to proper values
 #pragma region Constructor
 
+    TEST(FixedPointConstructor, copyConstructor) {
+
+    }
+
+    TEST(FixedPointConstructor, moveConstructor) {
+
+    }
+
+    TEST(FixedPointConstructor, integerConstructor) {
+
+    }
+
+    TEST(FixedPointConstructor, integerConstructorFail) {
+        
+    }
+
     // Due to char strings being one of the more complex constructors an additional region is warranted
     #pragma region Char String Constructor
         // Negative number use constructor instead of literal due to literals ignoring negative values and just constructing it then applying -
@@ -207,19 +223,45 @@
             #if DEBUGGING
             GTEST_FLAG_SET(death_test_style, "threadsafe");
 
-            EXPECT_DEATH(doubleFixed("-4503599627370496.000250"),".*");
+            EXPECT_DEATH(fixed("-1231388609"),".*");
+            EXPECT_DEATH(fixed("-8388609"),".*");
             EXPECT_DEATH(fixed("-8388608.004250"),".*");
+            EXPECT_EQ(fixed("-8388608").getBase(), -2147483648);
+
+            EXPECT_EQ((8388607.99609375_fx).getBase(), 2147483647);
+            EXPECT_DEATH(8388607.99999999_fx, ".*");
+            EXPECT_DEATH(8388608_fx, ".*");
+            EXPECT_DEATH(122311288608_fx, ".*");
+
+            EXPECT_DEATH(4503599627370496_fxd, ".*");
             EXPECT_DEATH(4503599627370495.999999999999_fxd, ".*");
+            EXPECT_EQ((4503599627370495.99951171875_fxd).getBase(), 9223372036854775807);
+
+            EXPECT_EQ(doubleFixed("-4503599627370496").getBase(), -9223372036854775807 - 1);
+            EXPECT_DEATH(doubleFixed("-4503599627370496.000250"),".*");
+            EXPECT_DEATH(doubleFixed("-4503599627370497"),".*");
+            EXPECT_DEATH(doubleFixed("-31234310991390902"),".*");
+
             EXPECT_DEATH(9000000000000000_fxd, ".*");
             EXPECT_DEATH(19000000023423400000_fxd, ".*");
-            EXPECT_DEATH(8388607.99999999_fx, ".*");
+
             EXPECT_DEATH(radian("-1"), ".*");
             EXPECT_DEATH(radian("-0.2342342342"), ".*");
 
             EXPECT_DEATH((FixedPoint<uint8, 6, true>("4")), ".*");
             EXPECT_DEATH((FixedPoint<uint8, 6, true>("3.999999999999")), ".*");
+            EXPECT_EQ((FixedPoint<uint8, 6, true>("3.984375")).getBase(), 255);
+
+            EXPECT_EQ((FixedPoint<uint8, 6, true>("0")).getBase(), 0);
+            EXPECT_DEATH((FixedPoint<uint8, 6, true>("-0.111")), ".*");
+
+
             EXPECT_DEATH((FixedPoint<uint8, 7, true>("2")), ".*");
             EXPECT_DEATH((FixedPoint<uint8, 7, true>("1.999999999")), ".*");
+            EXPECT_EQ((FixedPoint<uint8, 7, true>("1.9921875")).getBase(), 255);
+
+            EXPECT_EQ((FixedPoint<uint8, 7, true>("0")).getBase(), 0);
+            EXPECT_DEATH((FixedPoint<uint8, 7, true>("-0.111")), ".*");
             #endif
             EXPECT_TRUE(true);
         }
@@ -242,9 +284,87 @@
     #pragma endregion
 #pragma endregion
 
+// Tests if the string representation of chars work
+# pragma region String Representation
+        TEST(FixedPointStringRep, stringConversionInteger) {
+            EXPECT_EQ((0_fx).toString(), "0");
+            EXPECT_EQ((23423_fx).toString(), "23423");
+            EXPECT_EQ((123123_fx).toString(), "123123");
+            EXPECT_EQ((5232_fx).toString(), "5232");
+            EXPECT_EQ((8388607_fx).toString(), "8388607");
+
+            EXPECT_EQ((-23423_fx).toString(), "-23423");
+            EXPECT_EQ((-123123_fx).toString(), "-123123");
+            EXPECT_EQ((-5232_fx).toString(), "-5232");
+            EXPECT_EQ(fixed("-8388608").toString(), "-8388608");
+
+            EXPECT_EQ((0_fxd).toString(), "0");
+            EXPECT_EQ((23423_fxd).toString(), "23423");
+            EXPECT_EQ((123123_fxd).toString(), "123123");
+            EXPECT_EQ((5232_fxd).toString(), "5232");
+            EXPECT_EQ((8388607_fxd).toString(), "8388607");
+            EXPECT_EQ((42323323_fxd).toString(), "42323323");
+            EXPECT_EQ((4503599627370495_fxd).toString(), "4503599627370495");
+
+            EXPECT_EQ((-23423_fxd).toString(), "-23423");
+            EXPECT_EQ((-123123_fxd).toString(), "-123123");
+            EXPECT_EQ((-5232_fxd).toString(), "-5232");
+            EXPECT_EQ((-8388608_fxd).toString(), "-8388608");
+            EXPECT_EQ((-42323323_fxd).toString(), "-42323323");
+            EXPECT_EQ(doubleFixed("-4503599627370496").toString(), "-4503599627370496");
+
+            EXPECT_EQ((1_fxr).toString(), "1");
+            EXPECT_EQ((0_fxr).toString(), "0");
+        }
+
+        TEST(FixedPointStringRep, stringConversionExactDecimal) {
+            EXPECT_EQ((0.99609375_fx).toString(), "0.99609375");
+            EXPECT_EQ((0.125_fx).toString(), "0.125");
+            EXPECT_EQ((0.12890625_fx).toString(), "0.12890625");
+            EXPECT_EQ((0.046875_fx).toString(), "0.046875");
+            EXPECT_EQ((0.00390625_fx).toString(), "0.00390625");
+
+            EXPECT_EQ((-0.99609375_fx).toString(), "-0.99609375");
+            EXPECT_EQ((-0.125_fx).toString(), "-0.125");
+            EXPECT_EQ((-0.12890625_fx).toString(), "-0.12890625");
+            EXPECT_EQ((-0.046875_fx).toString(), "-0.046875");
+            EXPECT_EQ((-0.00390625_fx).toString(), "-0.00390625");
+
+            EXPECT_EQ((0.99951171875_fxd).toString(), "0.99951171875");
+            EXPECT_EQ((0.99609375_fxd).toString(), "0.99609375");
+            EXPECT_EQ((0.125_fxd).toString(), "0.125");
+            EXPECT_EQ((0.1142578125_fxd).toString(), "0.1142578125");
+            EXPECT_EQ((0.12890625_fxd).toString(), "0.12890625");
+            EXPECT_EQ((0.046875_fxd).toString(), "0.046875");
+            EXPECT_EQ((0.00390625_fxd).toString(), "0.00390625");
+            EXPECT_EQ((0.00048828125_fxd).toString(), "0.00048828125");
+
+            EXPECT_EQ((-0.99951171875_fxd).toString(), "-0.99951171875");
+            EXPECT_EQ((-0.99609375_fxd).toString(), "-0.99609375");
+            EXPECT_EQ((-0.125_fxd).toString(), "-0.125");
+            EXPECT_EQ((-0.1142578125_fxd).toString(), "-0.1142578125");
+            EXPECT_EQ((-0.12890625_fxd).toString(), "-0.12890625");
+            EXPECT_EQ((-0.046875_fxd).toString(), "-0.046875");
+            EXPECT_EQ((-0.00390625_fxd).toString(), "-0.00390625");
+            EXPECT_EQ((-0.00048828125_fxd).toString(), "-0.00048828125");
+
+        }
+
+        TEST(FixedPointStringRep, stringConversionApproximateDecimal) {
+            EXPECT_EQ((1.50973500311374664306640625_fxr).toString(), "1.509735107421875");
+            EXPECT_EQ((0.267951391637325286865234375_fxr).toString(), "0.26795196533203125");
+            EXPECT_EQ((0.057332796044647693634033203125_fxr).toString(), "0.057331085205078125");
+            EXPECT_EQ((0.0000000004656612873077392578125_fxr).toString(), "0");
+            EXPECT_EQ((FixedPoint<uint64, 64, true>("0.9999999999999999999457898913757247782996273599565029144287109375")).toString(), "1");
+            EXPECT_EQ((FixedPoint<uint64, 64, true>("1.9999999999999999999457898913757247782996273599565029144287109375")).toString(), "1.9999980926513671875");
+        }
+
+#pragma  endregion 
+
 // Tests if simple operations between Vectors works
 #pragma region Math Operations
 #pragma endregion
+
 
 // Tests for casting to different numeric types
 #pragma region Casting
@@ -306,11 +426,17 @@
 
     TEST(FixedPointCasting, crossFixedPointCastFailure) {
         #if DEBUGGING
-        EXPECT_DEATH(fixed(-16777216.00390625_fxd).getBase(), ".*");
-        EXPECT_EQ(fixed(-16777216_fxd).getBase(), fixed("-16777216").getBase());
+        EXPECT_DEATH(fixed(-8388608.00390625_fxd).getBase(), ".*");
+        EXPECT_EQ(fixed(-8388608_fxd).getBase(), fixed("-8388608").getBase());
 
-        EXPECT_DEATH(fixed(16777215.99999999_fxd).getBase(),".*");
-        EXPECT_EQ(fixed(16777215.99609375_fxd).getBase(), (16777215.99609375_fx).getBase());
+        EXPECT_DEATH(fixed(8388607.99999999_fxd).getBase(), ".*");
+        EXPECT_EQ(fixed(8388607.99609375_fxd).getBase(), (8388607.99609375_fx).getBase());
+
+        EXPECT_DEATH((FixedPoint<int16, 10>(1024_fx).getBase()), ".*");
+        EXPECT_DEATH((FixedPoint<int16, 10>(1023.99609375_fx).getBase()), ".*");
+
+        EXPECT_DEATH((FixedPoint<int16, 10>(-1024_fx).getBase()), ".*");
+        EXPECT_DEATH((FixedPoint<int16, 10>(-1024.00390625_fx).getBase()), ".*");
 
         EXPECT_DEATH(radian(-0.37109375_fxd).getBase(), ".*");
         EXPECT_DEATH(radian(-1.1875_fx).getBase(), ".*");
@@ -362,9 +488,62 @@
         EXPECT_EQ((uint32)(1.1875_fxr), 1);
     }
 
-    TEST(FixedPointCasting, signedCastFailure) {
+    TEST(FixedPointCasting, outofSignedBoundsCastFailure) {
         #if DEBUGGING
         GTEST_FLAG_SET(death_test_style, "threadsafe");
+
+        EXPECT_DEATH(int8 warnPrevent = (int8)(128.5875_fx), ".*");
+        EXPECT_EQ((int8)(127.5875_fx), int8(127));
+
+        EXPECT_DEATH(int16 warnPrevent = (int16)(32768.8875_fx);, ".*");
+        EXPECT_EQ((int16)(32767.5875_fx), int16(32767));
+
+        EXPECT_DEATH(int8 warnPrevent = (int8)(128.8875_fxd);, ".*");
+        EXPECT_EQ((int8)(127.5875_fxd), int8(127));
+
+        EXPECT_DEATH(int16 warnPrevent = (int16)(32768.8875_fxd);, ".*");
+        EXPECT_EQ((int16)(32767.5875_fxd), int16(32767));
+
+        EXPECT_DEATH(int32 warnPrevent = (int32)(2147483648.88375_fxd);, ".*");
+        EXPECT_EQ((int32)(2147483647.88375_fxd), int32(2147483647));
+
+        EXPECT_DEATH(int8 warnPrevent = (int8)fixed("-129.5875"), ".*");
+        EXPECT_EQ((int8)fixed("-128.5875"), int8(-128));
+
+        EXPECT_DEATH(int16 warnPrevent = (int16)fixed("-32769.8875");, ".*");
+        EXPECT_EQ((int16)fixed("-32768.5875"), int16(-32768));
+
+        EXPECT_DEATH(int8 warnPrevent = (int8)doubleFixed("-129.8875");, ".*");
+        EXPECT_EQ((int8)doubleFixed("-128.5875"), int8(-128));
+
+        EXPECT_DEATH(int16 warnPrevent = (int16)doubleFixed("-32769.8875");, ".*");
+        EXPECT_EQ((int16)doubleFixed("-32768.5875"), int16(-32768));
+
+        EXPECT_DEATH(int32 warnPrevent = (int32)doubleFixed("-2147483649.88375");, ".*");
+        EXPECT_EQ((int32)doubleFixed("-2147483648.88375"), int32(-2147483648));
+
+        #endif
+        EXPECT_TRUE(true);
+    }
+
+    TEST(FixedPointCasting, outofUnsignedBoundsCastFailure) {
+        #if DEBUGGING
+        GTEST_FLAG_SET(death_test_style, "threadsafe");
+
+        EXPECT_DEATH(uint8 warnPrevent = (uint8)(256.5875_fx), ".*");
+        EXPECT_EQ((uint8)(255.5875_fx), uint8(255));
+
+        EXPECT_DEATH(uint16 warnPrevent = (uint16)(65536.8875_fx);, ".*");
+        EXPECT_EQ((uint16)(65535.5875_fx), uint16(65535));
+
+        EXPECT_DEATH(uint8 warnPrevent = (uint8)(256.8875_fxd);, ".*");
+        EXPECT_EQ((uint8)(255.5875_fxd), uint8(255));
+
+        EXPECT_DEATH(uint16 warnPrevent = (uint16)(65536.8875_fxd);, ".*");
+        EXPECT_EQ((uint16)(65535.5875_fxd), uint16(65535));
+
+        EXPECT_DEATH(uint32 warnPrevent = (uint32)(4294967296.88375_fxd);, ".*");
+        EXPECT_EQ((uint32)(4294967295.88375_fxd), uint32(4294967295));
 
         EXPECT_DEATH(uint8 warnPrevent = (uint8)fixed("-43.1875");, ".*");
         EXPECT_DEATH(uint16 warnPrevent = (uint16)fixed("-473.1875");, ".*");
@@ -462,8 +641,11 @@
         EXPECT_EQ((double)(1.265625_fxr), 1.265625);
         EXPECT_EQ((double)(1.734375_fxr), 1.734375);
     }
+
+
 #pragma endregion
 
+#pragma region
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

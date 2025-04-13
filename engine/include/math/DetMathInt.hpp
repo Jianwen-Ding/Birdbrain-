@@ -74,19 +74,11 @@
         }
         
         // Finds the log of the given number and floors it to an int.
-        // Warning: Do not use negative numbers. This is converted to unsigned so unexpected numbers will output.
-        template <SignedInt T>
+        // Unlike actual log this allows for negative numbers, and will return Log_base(-num) in that scenario
+        // However like actual log, the number of 0 will be restricted
+        template <Int T>
         static constexpr T log(T num, uint8 base) {
-            using V = typename std::make_unsigned<T>::type;
-
-            ASSERT(num >= 0);
-            return log(V(num), base);
-        }
-
-        // Finds the log of the given number and floors it to an int.
-        template <UnsignedInt T>
-        static constexpr T log(T num, uint8 base) {
-            ASSERT(base != 0);
+            ASSERT(num != 0);
 
             if(base == 1) {
                 return 0;
