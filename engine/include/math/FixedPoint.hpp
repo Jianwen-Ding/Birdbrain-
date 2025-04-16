@@ -19,6 +19,10 @@ template <Int Base, uint8 DecimalBits, bool FlowGuard = true>
 struct FixedPoint {
 
 protected:
+    // How the FixedPoint stores its value
+    // Represents the value of the FixedPoint divided by 2^(Decimal Bits)
+    Base m_baseInt{ 0 };
+
     template<Int, uint8 , bool>
     friend class FixedPoint;
 
@@ -84,11 +88,10 @@ protected:
 
         static constexpr uint64 m_decimalPointMask = std::numeric_limits<uint64>::max() >> (64 - DecimalBits);
         static constexpr uint64 m_integerPointMask = ~m_decimalPointMask;
-    #pragma endregion
 
-    // How the FixedPoint stores its value
-    // Represents the value of the FixedPoint divided by 2^(Decimal Bits)
-    Base m_baseInt{ 0 };
+        using processInt = std::make_unsigned_t<Base>;
+        static constexpr uint8 m_maxDecBitPrecision = 18;
+    #pragma endregion
 
     // >>> These static asserts makes sure templates given to FixedPoint do work together <<<
     #pragma region Asserts
@@ -102,11 +105,26 @@ protected:
 
     // >>> Private helper functions made to assist public functions <<<
     #pragma region Helpers
+        // Allows direct constructor to call in integer constructor logic without duplication logic
+        template <Int Base2>
+        constexpr void integerInit(Base2 base) {
+            // A negative number cannot be used to construct a unsigned fixed point
+            ASSERT_LOG(m_isSigned || base >= 0, "Negative integer casted into unsigned fixed point");
+            // Makes sure that base number isn't too large to even be stored by m_baseInt 
+            ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits), "Integer [" << base << "] higher than integer limit [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
+            ASSERT_LOG(!FlowGuard || !m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits), "Integer [" << base << "] lower than integer minimum [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
+
+            m_baseInt = base << DecimalBits;
+        }
+
         template <Int Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
-        constexpr FixedPoint(Base2 base, bool direct) : FixedPoint(base) {
+        constexpr FixedPoint(Base2 base, bool direct){
             if (direct) { 
                 m_baseInt = base;
-            } 
+            }
+            else {
+                integerInit(base);
+            }
         }
 
         // Allows decimal bit to be clamped to a certain max number, used in cases where precision needs to be sacrificed to prevent overflow.
@@ -119,6 +137,103 @@ protected:
                 return DecimalBits;
             }
         }    
+
+        // Packs base int into a unsigned int that can be bitcasted into a floating point number in IEEE 754 format
+        // We don't need to be as cautious in terms of accounting for all possible variations of this, we only need to ensure that it works for float and double
+        template <FloatingPoint retFloat, UnsignedInt uFinalInt, UnsignedInt uCorInt, size_t mantissaSize, typename = std::enable_if_t<sizeof(retFloat) == sizeof(uFinalInt) && sizeof(uFinalInt) <= sizeof(uCorInt)>>
+        inline retFloat processFloatBits() const {
+            // Defining Constexpr variables
+            // 1 bits for everything in mantissa bit space
+            constexpr uCorInt mantissaOp = std::numeric_limits<uCorInt>::max() >> ((sizeof(uCorInt) * 8) - mantissaSize);
+            // The value that represents 0 for the specific floating point
+            constexpr uFinalInt zeroPoint = (uFinalInt(1) << ((sizeof(uFinalInt) * 8) - mantissaSize - 2)) - 1;
+
+            // Handles 0 edge case
+            if(m_baseInt == 0) {
+                return retFloat(0);
+            }
+
+            // Takes away sign from number in order to allow for bit casting operations
+            bool negative = m_baseInt < 0;
+            uCorInt bits = uCorInt(negative ? m_baseInt * -1 : m_baseInt);
+            uint8 width = std::bit_width(bits);
+
+            // Shifts the mantissa into place
+            int8 bitDiff = width - mantissaSize;
+            if(bitDiff > 0) {
+                bits >>= bitDiff - 1;
+            }
+            else {
+                bits <<= -bitDiff + 1;
+            }
+            bits &= mantissaOp;
+
+            // Shifts exponent into place
+            bits |= ((width - DecimalBits - 1) + zeroPoint) << mantissaSize;
+            // Shifts sign into place
+            if(negative) {
+                bits |= uFinalInt(1) << ((sizeof(uFinalInt) * 8) - 1);
+            }
+
+            return std::bit_cast<retFloat>(uFinalInt(bits));
+        }
+
+        // Reduces code duplication of toString.
+        // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
+        inline std::string unsignedToString(processInt num, bool stopOverflow) const {      
+            // Adds integer point    
+            std::string retString; 
+            if constexpr (m_decimalBitsMaxed) {
+                retString = "0";
+            }
+            else {
+                retString = std::to_string(num >> DecimalBits);    
+            }
+            // Adds for decimal point and marker
+            static constexpr uint8 repDecimalBits = floorRepDecBit<m_maxDecBitPrecision>();
+            constexpr int16 decDiff = DecimalBits - m_maxDecBitPrecision;
+
+            processInt repDecimalNum;
+            if constexpr (decDiff > 0) {
+                repDecimalNum = (num & m_decimalPointMask) >> (decDiff - 1);
+                // Rounding logic
+                if (repDecimalNum & 1) {
+                    repDecimalNum >>= 1;
+                    // Prevents rounding up if it would cause overflow
+                    if(!stopOverflow || repDecimalNum < (uint64(1) << repDecimalBits) - 1) {
+                        repDecimalNum += 1;
+                    }
+                }
+                else {
+                    repDecimalNum >>= 1;
+                }
+            }
+            else {
+                repDecimalNum = (num & m_decimalPointMask);
+            }
+
+            uint64 decimalNum = repDecimalNum * DetMathInt::pow(int64(5), repDecimalBits);
+            if(decimalNum != 0) {
+                uint64 cutNum;
+                bool foundCut = false;
+                uint8 fullDecLength = 0;
+                while(decimalNum > 0) {
+                    if(!foundCut && decimalNum % 10 != 0) {
+                        cutNum = decimalNum;
+                        foundCut = true;
+                    }
+                    decimalNum /= 10;
+                    fullDecLength++;
+                }
+                ASSERT_LOG(foundCut, "Despite decimalNum not being zero, a non 0 decimal could not be found");
+
+                retString += '.';
+                retString.resize(retString.size() + repDecimalBits - fullDecLength, '0');
+                retString.append(std::to_string(cutNum));
+            }
+            return retString;
+        }
+        
     #pragma endregion
 public:
     // >>> Constructors <<<
@@ -126,10 +241,13 @@ public:
         // Fixed point empty constructor leaves a value of 0
         constexpr FixedPoint() : m_baseInt( 0 ) {};
 
+        // Copy constructor between FixedPoint numbers
+        // If org is more precise in decimal bits, then the value gets rounded down in precision. 
+        // TODO: If rounding is added target this
         template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
         constexpr FixedPoint(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& org) {
             // Makes sure negative signed FixedPoint does not get casted into an unsigned fixed point 
-            ASSERT_LOG(std::is_signed_v<Base> || org.m_baseInt >= 0, "Negative fixed point casted into unsigned fixed number");
+            ASSERT_LOG(std::is_signed_v<Base> || org.m_baseInt >= 0, "Negative fixed point casted into unsigned fixed point number");
             if constexpr (std::is_same_v<Base2,Base> && DecimalBits == DecimalBits2) {
                 m_baseInt = org.m_baseInt;
             }
@@ -137,11 +255,11 @@ public:
                 constexpr int16 decDiff = DecimalBits - DecimalBits2;
                 if constexpr (decDiff > 0) {
                     // Makes sure that FixedPoint number does not cast into an overflow
-                    ASSERT(!FlowGuard || std::cmp_greater_equal(std::numeric_limits<Base>::max() >> decDiff, org.m_baseInt));
+                    ASSERT_LOG(!FlowGuard || std::cmp_greater_equal(std::numeric_limits<Base>::max() >> decDiff, org.m_baseInt), "Fixed point number [" << org.toString().c_str() << "] too high to be casted into smaller fixed point number");
                     // No need to check for negative underflow for unsigned numbers or positive
                     if constexpr (m_isSigned) {
                         constexpr Base decDiffDivisor = (1 << decDiff);
-                        ASSERT(!FlowGuard || std::cmp_less_equal(std::numeric_limits<Base>::min() / decDiffDivisor,  org.m_baseInt)); 
+                        ASSERT_LOG(!FlowGuard || std::cmp_less_equal(std::numeric_limits<Base>::min() / decDiffDivisor,  org.m_baseInt), "Fixed point number [" << org.toString().c_str() << "] too low to be casted into smaller fixed point number"); 
                     }
 
                     m_baseInt = Base(org.m_baseInt) << decDiff;
@@ -150,11 +268,11 @@ public:
                     // Makes sure that FixedPoint number does not cast into an overflow
                     constexpr int16 reverseDecDiff = -decDiff;
                     // Makes sure that FixedPoint number does not cast into an overflow
-                    ASSERT(!FlowGuard || std::cmp_less_equal(org.m_baseInt >> reverseDecDiff, std::numeric_limits<Base>::max()));
+                    ASSERT_LOG(!FlowGuard || std::cmp_less_equal(org.m_baseInt >> reverseDecDiff, std::numeric_limits<Base>::max()), "Fixed point number [" << org.toString().c_str() << "] too high to be casted into smaller fixed point number");
                     if constexpr (std::is_signed_v<Base2>) {
                         constexpr Base2 reverseDecDiffDivisor = (1 << reverseDecDiff);
                         // Check for negative underflow for signed numbers
-                        ASSERT(!FlowGuard || std::cmp_greater_equal(org.m_baseInt / reverseDecDiffDivisor, std::numeric_limits<Base>::min())); 
+                        ASSERT_LOG(!FlowGuard || std::cmp_greater_equal(org.m_baseInt / reverseDecDiffDivisor, std::numeric_limits<Base>::min()), "Fixed point number [" << org.toString().c_str() << "] too low to be casted into smaller fixed point number"); 
 
                         m_baseInt = org.m_baseInt / reverseDecDiffDivisor;
                     }
@@ -166,15 +284,7 @@ public:
         };
 
         template <Int Base2>
-        constexpr FixedPoint(Base2 base) {
-            // A negative number cannot be used to construct a unsigned fixed point
-            ASSERT_LOG(m_isSigned || base >= 0, "Negative fixed point casted into unsigned int");
-            // Makes sure that base number isn't too large to even be stored by m_baseInt 
-            ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits), "Fixed point number too high to be casted into int");
-            ASSERT_LOG(!FlowGuard || m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits), "Fixed point number too low to be casted into int");
-
-            m_baseInt = base << DecimalBits;
-        }
+        constexpr FixedPoint(Base2 base) { integerInit(base); }
 
         // Used for FixedPoint string literals.
         // Will round number to closes applicable fixed point.
@@ -379,9 +489,9 @@ public:
     // >>> Basic Arithmetic Operators (+, -, /, ect) <<<
     #pragma region Arithmetic
         FixedPoint<Base,DecimalBits,FlowGuard> operator-() const {
-            static_assert(m_isSigned);
+            static_assert(m_isSigned, "Attempted to flip sign on a unsigned fixed point number");
             // Due to two's compliment if signed int is equal to min number *-1 cannot happen without overflow
-            ASSERT(!FlowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min());
+            ASSERT_LOG(!FlowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min(), "Fixed point number [" << toString().c_str() << "] will overflow on flipped sign");
 
             return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt * -1, true);
         }
@@ -406,76 +516,16 @@ public:
     // >>> Controls text representation of fixed point numbers <<<
     #pragma region String Representation
         // Streams the value of the Fixed Point number.
-        // Only supports up to 19 decimal bits of precision due to overflow issues, will round to nearest 19 decimal bit representation if over. 
+        // Only supports up to 18 decimal bits of precision due to overflow issues, will round to nearest 19 decimal bit representation if over. 
         // If rounding up would cause value to overflow. The decimal will round down instead.
-        friend std::ostream& operator<<(std::ostream& out, const FixedPoint<Base, DecimalBits, FlowGuard>& obj)
-        {
+        friend std::ostream& operator<<(std::ostream& out, const FixedPoint<Base, DecimalBits, FlowGuard>& obj) {
             return out << obj.toString().c_str();
         }
 
-        using processInt = std::make_unsigned_t<Base>;
-        static constexpr uint8 m_maxDecBitPrecision = 18;
-
-        // Reduces code duplication of toString.
-        // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
-        inline std::string unsignedToString(processInt num, bool stopOverflow) {      
-            // Adds integer point    
-            std::string retString; 
-            if constexpr (m_decimalBitsMaxed) {
-                retString = "0";
-            }
-            else {
-                retString = std::to_string(num >> DecimalBits);    
-            }
-            // Adds for decimal point and marker
-            static constexpr uint8 repDecimalBits = floorRepDecBit<m_maxDecBitPrecision>();
-            constexpr int16 decDiff = DecimalBits - m_maxDecBitPrecision;
-
-            processInt repDecimalNum;
-            if constexpr (decDiff > 0) {
-                repDecimalNum = (num & m_decimalPointMask) >> (decDiff - 1);
-                // Rounding logic
-                if (repDecimalNum & 1) {
-                    repDecimalNum >>= 1;
-                    // Prevents rounding up if it would cause overflow
-                    if(!stopOverflow || repDecimalNum < (uint64(1) << repDecimalBits) - 1) {
-                        repDecimalNum += 1;
-                    }
-                }
-                else {
-                    repDecimalNum >>= 1;
-                }
-            }
-            else {
-                repDecimalNum = (num & m_decimalPointMask);
-            }
-
-            uint64 decimalNum = repDecimalNum * DetMathInt::pow(int64(5), repDecimalBits);
-            if(decimalNum != 0) {
-                uint64 cutNum;
-                bool foundCut = false;
-                uint8 fullDecLength = 0;
-                while(decimalNum > 0) {
-                    if(!foundCut && decimalNum % 10 != 0) {
-                        cutNum = decimalNum;
-                        foundCut = true;
-                    }
-                    decimalNum /= 10;
-                    fullDecLength++;
-                }
-                ASSERT_LOG(foundCut, "Despite decimalNum not being zero, a non 0 decimal could not be found");
-
-                retString += '.';
-                retString.resize(retString.size() + repDecimalBits - fullDecLength, '0');
-                retString.append(std::to_string(cutNum));
-            }
-            return retString;
-        }
-        
         // Converts value of fixed point into a string.
-        // Only supports up to 19 bits of decimal precision due to overflow issues, will round to nearest 19 decimal bit representation if over.
+        // Only supports up to 18 bits of decimal precision due to overflow issues, will round to nearest 19 decimal bit representation if over.
         // If rounding up would cause an overflow, the decimals will be rounded down instead.
-        std::string toString() {
+        std::string toString() const{
             if (DecimalBits == 0) {
                 return std::to_string(m_baseInt);
             }
@@ -517,11 +567,11 @@ public:
         template <Int Base2>
         operator Base2 () const {
             // Makes sure a negative number is not casted into an unsigned number
-            ASSERT(std::is_signed_v<Base2> || m_baseInt >= 0);
+            ASSERT_LOG(std::is_signed_v<Base2> || m_baseInt >= 0, "Negative fixed point number ["  << toString().c_str() << "] casted as a unsigned integer");
             // Makes sure number isn't too large to be casted into specified int, flow guard does not apply since int is being casted into
-            ASSERT(std::cmp_less_equal(m_baseInt >> DecimalBits, std::numeric_limits<Base2>::max()));
+            ASSERT_LOG(std::cmp_less_equal(m_baseInt >> DecimalBits, std::numeric_limits<Base2>::max()), "Fixed point number [" << toString().c_str() << "] too high to be casted into smaller fixed point number");
             if(m_isSigned) {
-                ASSERT(std::cmp_greater_equal(m_baseInt / m_divisor, std::numeric_limits<Base2>::min()));
+                ASSERT_LOG(std::cmp_greater_equal(m_baseInt / m_divisor, std::numeric_limits<Base2>::min()), "Fixed point number [" << toString().c_str() << "] too low to be casted into smaller fixed point number");
             }
 
             if constexpr (m_isSigned) {
@@ -531,46 +581,6 @@ public:
             else {
                 return Base2(m_baseInt >> DecimalBits);
             }
-        }
-
-        // Packs base int into a unsigned int that can be bitcasted into a floating point number in IEEE 754 format
-        // We don't need to be as cautious in terms of accounting for all possible variations of this, we only need to ensure that it works for float and double
-        template <FloatingPoint retFloat, UnsignedInt uFinalInt, UnsignedInt uCorInt, size_t mantissaSize, typename = std::enable_if_t<sizeof(retFloat) == sizeof(uFinalInt) && sizeof(uFinalInt) <= sizeof(uCorInt)>>
-        inline retFloat processFloatBits() const {
-            // Defining Constexpr variables
-            // 1 bits for everything in mantissa bit space
-            constexpr uCorInt mantissaOp = std::numeric_limits<uCorInt>::max() >> ((sizeof(uCorInt) * 8) - mantissaSize);
-            // The value that represents 0 for the specific floating point
-            constexpr uFinalInt zeroPoint = (uFinalInt(1) << ((sizeof(uFinalInt) * 8) - mantissaSize - 2)) - 1;
-
-            // Handles 0 edge case
-            if(m_baseInt == 0) {
-                return retFloat(0);
-            }
-
-            // Takes away sign from number in order to allow for bit casting operations
-            bool negative = m_baseInt < 0;
-            uCorInt bits = uCorInt(negative ? m_baseInt * -1 : m_baseInt);
-            uint8 width = std::bit_width(bits);
-
-            // Shifts the mantissa into place
-            int8 bitDiff = width - mantissaSize;
-            if(bitDiff > 0) {
-                bits >>= bitDiff - 1;
-            }
-            else {
-                bits <<= -bitDiff + 1;
-            }
-            bits &= mantissaOp;
-
-            // Shifts exponent into place
-            bits |= ((width - DecimalBits - 1) + zeroPoint) << mantissaSize;
-            // Shifts sign into place
-            if(negative) {
-                bits |= uFinalInt(1) << ((sizeof(uFinalInt) * 8) - 1);
-            }
-
-            return std::bit_cast<retFloat>(uFinalInt(bits));
         }
 
         // Approximates FixedPoint to float representation
@@ -611,7 +621,7 @@ public:
     #pragma endregion
 
     // Fetches the underlying integer that the fixed point stores it's data within.
-    Base getBase() {
+    Base getData() const {
         return m_baseInt;
     }
 };
@@ -619,7 +629,7 @@ public:
 // Defines typical configurations that fixed point numbers come in
 typedef FixedPoint<int32, 8, true> fixed;
 typedef FixedPoint<int64, 11, true> doubleFixed;
-typedef FixedPoint<uint32, 31, false> radian;
+typedef FixedPoint<uint16, 15, false> radian;
 
 // Converts text into a fixed point radian.
 // Will round number to closes applicable fixed point.
