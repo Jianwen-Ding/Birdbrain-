@@ -234,6 +234,140 @@ protected:
             return retString;
         }
         
+        // Allows for code deduplication between integer comparison and fixed point comparison
+        #pragma region Comparison
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool equals(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base>) {
+                        return m_baseInt == num;
+                    }
+                    else {
+                        return std::cmp_equal(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && std::cmp_equal(Base2(m_baseInt) << decDiff, num);
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater_equal(num, std::numeric_limits<Base>::min() >> decDiff) && std::cmp_less_equal(num, std::numeric_limits<Base>::max() >> decDiff) && std::cmp_equal(m_baseInt, Base(num) << decDiff);
+                    }
+                }
+            }
+
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool greater(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt > num;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_greater(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, num));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less(num, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(num, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(num) << decDiff));
+                    }
+                }
+            }
+
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool lesser(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt < num;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_less(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, num));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater(num, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(num, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(num) << decDiff));
+                    }
+                }
+            }
+
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool greaterEqual(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt >= num;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_greater_equal(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater_equal(Base2(m_baseInt) << decDiff, num));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less_equal(num, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(num, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater_equal(m_baseInt, Base(num) << decDiff));
+                    }
+                }
+            }
+
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool lesserEqual(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt <= num;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_less_equal(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less_equal(Base2(m_baseInt) << decDiff, num));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater_equal(num, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(num, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less_equal(m_baseInt, Base(num) << decDiff));
+                    }
+                }
+            }
+
+            template <typename Base2, uint8 DecimalBits2>
+            constexpr inline bool notEqual(const Base2 num) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base>) {
+                        return m_baseInt != num;
+                    }
+                    else {
+                        return std::cmp_not_equal(m_baseInt, num);
+                    }
+                }
+                else {
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_not_equal(Base2(m_baseInt) << decDiff, num);
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less(num, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(num, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_not_equal(m_baseInt, Base(num) << decDiff);
+                    }
+                }
+            }
+        #pragma endregion
     #pragma endregion
 public:
     // >>> Constructors <<<
@@ -470,137 +604,141 @@ public:
 
     // >>> Comparison Operators (==, >, <, ect) <<< 
     #pragma region Comparison
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator ==(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base>) {
-                    return m_baseInt == rhs.m_baseInt;
+        #pragma Fixed Point
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator ==(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base>) {
+                        return m_baseInt == rhs.m_baseInt;
+                    }
+                    else {
+                        return std::cmp_equal(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    return std::cmp_equal(m_baseInt, rhs.m_baseInt);
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && std::cmp_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && std::cmp_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
+                    }
                 }
             }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && std::cmp_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
-                }
-                else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && std::cmp_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
-                }
-            }
-        }
 
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator >(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return m_baseInt > rhs.m_baseInt;
-                }
-                else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return std::cmp_greater(m_baseInt, rhs.m_baseInt);
-                }
-            }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator >(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt > rhs.m_baseInt;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_greater(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    }
                 }
             }
-        }
 
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator <(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return m_baseInt < rhs.m_baseInt;
-                }
-                else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return std::cmp_less(m_baseInt, rhs.m_baseInt);
-                }
-            }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator <(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt < rhs.m_baseInt;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_less(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    }
                 }
             }
-        }
 
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator >=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return m_baseInt >= rhs.m_baseInt;
-                }
-                else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return std::cmp_greater_equal(m_baseInt, rhs.m_baseInt);
-                }
-            }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator >=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt >= rhs.m_baseInt;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_greater_equal(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    }
                 }
             }
-        }
 
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator <=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return m_baseInt <= rhs.m_baseInt;
-                }
-                else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                    return std::cmp_less_equal(m_baseInt, rhs.m_baseInt);
-                }
-            }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator <=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return m_baseInt <= rhs.m_baseInt;
+                    }
+                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
+                        return std::cmp_less_equal(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
+                    }
                 }
             }
-        }
 
-        template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
-        constexpr bool operator !=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-            if constexpr (DecimalBits2 == DecimalBits) {
-                if constexpr (std::is_same_v<Base2, Base>) {
-                    return m_baseInt != rhs.m_baseInt;
+            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            constexpr bool operator !=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
+                if constexpr (DecimalBits2 == DecimalBits) {
+                    if constexpr (std::is_same_v<Base2, Base>) {
+                        return m_baseInt != rhs.m_baseInt;
+                    }
+                    else {
+                        return std::cmp_not_equal(m_baseInt, rhs.m_baseInt);
+                    }
                 }
                 else {
-                    return std::cmp_not_equal(m_baseInt, rhs.m_baseInt);
+                    if constexpr (DecimalBits2 > DecimalBits){
+                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
+                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_not_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
+                    }
+                    else {
+                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
+                        return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_not_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
+                    }
                 }
             }
-            else {
-                if constexpr (DecimalBits2 > DecimalBits){
-                    constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                    return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_not_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
-                }
-                else {
-                    constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                    return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_not_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
-                }
-            }
-        }
+        #pragma endregion
+        #pragma Integer
+        #pragma endregion
     #pragma endregion
 
     // >>> Basic Arithmetic Operators (+, -, /, ect) <<<
