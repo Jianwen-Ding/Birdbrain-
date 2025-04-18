@@ -592,7 +592,437 @@
         }
 #pragma  endregion 
 
-// Tests if simple operations between Vectors works
+// Tests if equality between different 
+#pragma region Comparison operations
+    #pragma region Same type fixed point
+        TEST(FixedPointComparison, FixedPointEqual) {
+            EXPECT_TRUE(1.5_fx == 1.5_fx);
+            EXPECT_TRUE((-3.25_fx) == (-3.25_fx));
+            EXPECT_TRUE(0_fx == 0_fx);
+            EXPECT_FALSE(1.5_fx == 2.5_fx);
+            
+            EXPECT_TRUE(1.5_fxd == 1.5_fxd);
+            EXPECT_TRUE((-3.25_fxd) == (-3.25_fxd));
+            
+            EXPECT_TRUE(1.5_fxr == 1.5_fxr);
+            EXPECT_TRUE(0.75_fxr == 0.75_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointEqualEdgeCase) {
+            // Use powers of 2 as they're exactly representable in binary fixed-point
+            EXPECT_TRUE(0.5_fx == 0.5_fx);
+            EXPECT_TRUE(0.25_fx == 0.25_fx);
+            EXPECT_TRUE(0.125_fx == 0.125_fx);
+            
+            EXPECT_TRUE(0.5_fxd == 0.5_fxd);
+            EXPECT_TRUE(0.0625_fxd == 0.0625_fxd);
+            
+            EXPECT_TRUE(0.5_fxr == 0.5_fxr);
+            EXPECT_TRUE(0.03125_fxr == 0.03125_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointGreater) {
+            EXPECT_TRUE(2.5_fx > 1.5_fx);
+            EXPECT_TRUE(0_fx > (-1.5_fx));
+            EXPECT_TRUE((-1.5_fx) > (-2.5_fx));
+            EXPECT_FALSE(1.5_fx > 1.5_fx);
+            EXPECT_FALSE(1.5_fx > 2.5_fx);
+            
+            EXPECT_TRUE(2.5_fxd > 1.5_fxd);
+            EXPECT_TRUE((-1.5_fxd) > (-2.5_fxd));
+            
+            EXPECT_TRUE(1.5_fxr > 0.5_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointGreaterEdgeCase) {
+            // Using powers of 2 for exact representation
+            EXPECT_TRUE(0.25_fx > 0.125_fx);
+            EXPECT_FALSE(0.125_fx > 0.125_fx);
+            
+            EXPECT_TRUE(0.0625_fxd > 0.03125_fxd);
+            EXPECT_FALSE(0.03125_fxd > 0.03125_fxd);
+            
+            EXPECT_TRUE(0.0625_fxr > 0.03125_fxr);
+            EXPECT_FALSE(0.03125_fxr > 0.03125_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointLesser) {
+            EXPECT_TRUE(1.5_fx < 2.5_fx);
+            EXPECT_TRUE((-1.5_fx) < 0_fx);
+            EXPECT_TRUE((-2.5_fx) < (-1.5_fx));
+            EXPECT_FALSE(1.5_fx < 1.5_fx);
+            EXPECT_FALSE(2.5_fx < 1.5_fx);
+            
+            EXPECT_TRUE(1.5_fxd < 2.5_fxd);
+            EXPECT_TRUE((-2.5_fxd) < (-1.5_fxd));
+            
+            EXPECT_TRUE(0.5_fxr < 1.5_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointLesserEdgeCase) {
+            // Using powers of 2 for exact representation
+            EXPECT_TRUE(0.125_fx < 0.25_fx);
+            EXPECT_FALSE(0.125_fx < 0.125_fx);
+            
+            EXPECT_TRUE(0.03125_fxd < 0.0625_fxd);
+            EXPECT_FALSE(0.03125_fxd < 0.03125_fxd);
+            
+            EXPECT_TRUE(0.03125_fxr < 0.0625_fxr);
+            EXPECT_FALSE(0.03125_fxr < 0.03125_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointEqualLesser) {
+            EXPECT_TRUE(1.5_fx <= 1.5_fx);
+            EXPECT_TRUE(1.5_fx <= 2.5_fx);
+            EXPECT_TRUE((-2.5_fx) <= (-1.5_fx));
+            EXPECT_FALSE(2.5_fx <= 1.5_fx);
+            EXPECT_FALSE((-1.5_fx) <= (-2.5_fx));
+            
+            EXPECT_TRUE(1.5_fxd <= 1.5_fxd);
+            EXPECT_TRUE(1.5_fxd <= 2.5_fxd);
+            
+            EXPECT_TRUE(0.5_fxr <= 1.5_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointEqualLesserEdgeCase) {
+            // Using powers of 2 for exact representation
+            EXPECT_TRUE(0.125_fx <= 0.125_fx);
+            EXPECT_TRUE(0.125_fx <= 0.25_fx);
+            
+            EXPECT_TRUE(0.03125_fxd <= 0.03125_fxd);
+            EXPECT_TRUE(0.03125_fxd <= 0.0625_fxd);
+            
+            EXPECT_TRUE(0.03125_fxr <= 0.03125_fxr);
+            EXPECT_TRUE(0.03125_fxr <= 0.0625_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointEqualGreater) {
+            EXPECT_TRUE(1.5_fx >= 1.5_fx);
+            EXPECT_TRUE(2.5_fx >= 1.5_fx);
+            EXPECT_TRUE((-1.5_fx) >= (-2.5_fx));
+            EXPECT_FALSE(1.5_fx >= 2.5_fx);
+            EXPECT_FALSE((-2.5_fx) >= (-1.5_fx));
+            
+            EXPECT_TRUE(2.5_fxd >= 1.5_fxd);
+            EXPECT_TRUE((-1.5_fxd) >= (-2.5_fxd));
+            
+            EXPECT_TRUE(1.5_fxr >= 0.5_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointEqualGreaterEdgeCase) {
+            // Using powers of 2 for exact representation
+            EXPECT_TRUE(0.125_fx >= 0.125_fx);
+            EXPECT_TRUE(0.25_fx >= 0.125_fx);
+            
+            EXPECT_TRUE(0.03125_fxd >= 0.03125_fxd);
+            EXPECT_TRUE(0.0625_fxd >= 0.03125_fxd);
+            
+            EXPECT_TRUE(0.03125_fxr >= 0.03125_fxr);
+            EXPECT_TRUE(0.0625_fxr >= 0.03125_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointNotEqual) {
+            EXPECT_TRUE(1.5_fx != 2.5_fx);
+            EXPECT_TRUE((-1.5_fx) != 1.5_fx);
+            EXPECT_FALSE(1.5_fx != 1.5_fx);
+            EXPECT_FALSE((-2.5_fx) != (-2.5_fx));
+            
+            EXPECT_TRUE(1.5_fxd != 2.5_fxd);
+            EXPECT_FALSE((-2.5_fxd) != (-2.5_fxd));
+            
+            EXPECT_TRUE(0.5_fxr != 1.5_fxr);
+            EXPECT_FALSE(3.0_fxr != 3.0_fxr);
+        }
+
+        TEST(FixedPointComparison, FixedPointNotEqualEdgeCase) {
+            // Using powers of 2 for exact representation
+            EXPECT_TRUE(0.125_fx != 0.25_fx);
+            EXPECT_FALSE(0.125_fx != 0.125_fx);
+            
+            EXPECT_TRUE(0.03125_fxd != 0.0625_fxd);
+            EXPECT_FALSE(0.03125_fxd != 0.03125_fxd);
+            
+            EXPECT_TRUE(0.03125_fxr != 0.0625_fxr);
+            EXPECT_FALSE(0.03125_fxr != 0.03125_fxr);
+        }
+    #pragma endregion
+
+    #pragma region Different type fixed point 
+        TEST(FixedPointComparison, CrossFixedEqual) {
+            EXPECT_TRUE(1.5_fx == 1.5_fxd);
+            EXPECT_TRUE(1.5_fxd == 1.5_fx);
+            EXPECT_TRUE(1.5_fx == 1.5_fxr);
+            EXPECT_TRUE(1.5_fxr == 1.5_fx);
+            EXPECT_TRUE(1.5_fxd == 1.5_fxr);
+            EXPECT_TRUE(1.5_fxr == 1.5_fxd);
+            EXPECT_FALSE(1.5_fx == 2.0_fxd);
+
+            EXPECT_TRUE(0.125_fx == 0.125_fxd);
+            EXPECT_TRUE(0.25_fxd == 0.25_fxr);
+            EXPECT_TRUE(0.5_fxr == 0.5_fx);
+            EXPECT_FALSE(0.25_fx == 0.125_fxd);
+            EXPECT_FALSE(0.5_fxd == 0.25_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedGreater) {
+            EXPECT_TRUE(2.0_fx > 1.5_fxd);
+            EXPECT_TRUE(2.0_fxd > 1.5_fx);
+            EXPECT_TRUE(2.0_fx > 1.5_fxr);
+            EXPECT_TRUE(2.0_fxd > 1.5_fxr);
+            EXPECT_FALSE(1.5_fx > 1.5_fxd);
+            EXPECT_FALSE(1.5_fxr > 2.0_fx);
+
+            EXPECT_TRUE(0.25_fx > 0.125_fxd);
+            EXPECT_TRUE(0.25_fxd > 0.125_fxr);
+            EXPECT_TRUE(0.25_fxr > 0.125_fx);
+            EXPECT_FALSE(0.125_fx > 0.125_fxd);
+            EXPECT_FALSE(0.125_fxd > 0.25_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedLesser) {
+            EXPECT_TRUE(1.5_fx < 2.0_fxd);
+            EXPECT_TRUE(1.5_fxd < 2.0_fx);
+            EXPECT_TRUE(1.5_fxr < 2.0_fx);
+            EXPECT_TRUE(1.5_fxr < 2.0_fxd);
+            EXPECT_FALSE(1.5_fx < 1.5_fxd);
+
+            EXPECT_TRUE(0.125_fx < 0.25_fxd);
+            EXPECT_TRUE(0.125_fxd < 0.25_fxr);
+            EXPECT_TRUE(0.125_fxr < 0.25_fx);
+            EXPECT_FALSE(0.125_fx < 0.125_fxd);
+            EXPECT_FALSE(0.25_fxd < 0.125_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedEqualLesser) {
+            EXPECT_TRUE(1.5_fx <= 1.5_fxd);
+            EXPECT_TRUE(1.5_fx <= 2.0_fxd);
+            EXPECT_TRUE(1.5_fxd <= 1.5_fx);
+            EXPECT_TRUE(1.5_fxr <= 2.0_fx);
+            EXPECT_TRUE(1.5_fxd <= 1.5_fxr);
+            EXPECT_TRUE(1.5_fxr <= 2.0_fxd);
+            EXPECT_FALSE(2.0_fx <= 1.5_fxd);
+
+            EXPECT_TRUE(0.125_fx <= 0.125_fxd);
+            EXPECT_TRUE(0.125_fx <= 0.25_fxd);
+            EXPECT_TRUE(0.125_fxd <= 0.125_fxr);
+            EXPECT_TRUE(0.125_fxr <= 0.25_fx);
+            EXPECT_FALSE(0.25_fx <= 0.125_fxd);
+            EXPECT_FALSE(0.25_fxd <= 0.125_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedEqualGreater) {
+            EXPECT_TRUE(1.5_fx >= 1.5_fxd);
+            EXPECT_TRUE(2.0_fx >= 1.5_fxd);
+            EXPECT_TRUE(1.5_fxd >= 1.5_fx);
+            EXPECT_TRUE(1.5_fxd >= 1.5_fxr);
+            EXPECT_FALSE(1.5_fx >= 2.0_fxd);
+            EXPECT_FALSE(1.5_fxr >= 2.0_fx);
+
+            EXPECT_TRUE(0.125_fx >= 0.125_fxd);
+            EXPECT_TRUE(0.25_fx >= 0.125_fxd);
+            EXPECT_TRUE(0.125_fxd >= 0.125_fxr);
+            EXPECT_TRUE(0.25_fxr >= 0.125_fx);
+            EXPECT_FALSE(0.125_fx >= 0.25_fxd);
+            EXPECT_FALSE(0.125_fxd >= 0.25_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNotEqual) {
+            EXPECT_TRUE(1.5_fx != 2.0_fxd);
+            EXPECT_TRUE(2.0_fxd != 1.5_fx);
+            EXPECT_FALSE(1.5_fx != 1.5_fxd);
+            EXPECT_FALSE(1.5_fxr != 1.5_fx);
+
+            EXPECT_TRUE(0.125_fx != 0.25_fxd);
+            EXPECT_TRUE(0.25_fxd != 0.125_fxr);
+            EXPECT_TRUE(0.125_fxr != 0.25_fx);
+            EXPECT_FALSE(0.125_fx != 0.125_fxd);
+            EXPECT_FALSE(0.125_fxd != 0.125_fxr);
+        }
+        
+        // Testing with negative values across types
+        TEST(FixedPointComparison, CrossFixedNegativeValues) {
+            EXPECT_TRUE((-1.5_fx) == (-1.5_fxd));
+            EXPECT_TRUE((-2.0_fx) < (-1.5_fxd));
+            EXPECT_TRUE((-1.5_fx) > (-2.0_fxd));
+            EXPECT_TRUE((-1.5_fx) <= (-1.5_fxd));
+            EXPECT_TRUE((-1.5_fx) != (-2.0_fxd));
+        }
+        
+        // Testing with zero across types
+        TEST(FixedPointComparison, CrossFixedWithZero) {
+            EXPECT_TRUE(0_fx == 0_fxd);
+            EXPECT_TRUE(0_fxr == 0_fx);
+            EXPECT_TRUE(0_fxd == 0_fxr);
+            EXPECT_TRUE(0_fx <= 0_fxd);
+            EXPECT_TRUE(0_fxr >= 0_fx);
+            EXPECT_FALSE(0_fx != 0_fxd);
+        }
+
+        TEST(FixedPointComparison, CrossFixedEqualEdgeCase) {
+            // Create values that will overflow when compared across types
+            // fx is int32 with 8 decimal bits
+            // fxd is int64 with 11 decimal bits
+            // fxr is uint16 with 15 decimal bits (smallest range)
+            
+            // Value too large for fxr but valid in fx/fxd
+            fixed biggerThanRadianMax = 100.0_fx;  // Valid in fx, would overflow in fxr
+            doubleFixed veryLargeVal = 1000000.0_fxd;  // Valid in fxd, would overflow in fx and fxr
+            
+            // Test cross-type comparisons where one would overflow in the other type
+            EXPECT_FALSE(biggerThanRadianMax == 1.0_fxr);
+            EXPECT_FALSE(veryLargeVal == 100.0_fx);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedGreaterEdgeCase) {
+            // Values that would overflow if converted
+            fixed biggerThanRadianMax = 100.0_fx;
+            doubleFixed veryLargeVal = 1000000.0_fxd;
+            
+            // Test greater than with values that would overflow
+            EXPECT_TRUE(biggerThanRadianMax > 1.0_fxr);
+            EXPECT_TRUE(veryLargeVal > 100.0_fx);
+            EXPECT_FALSE(1.0_fxr > biggerThanRadianMax);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedLesserEdgeCase) {
+            // Values that would overflow if converted
+            fixed biggerThanRadianMax = 100.0_fx;
+            doubleFixed veryLargeVal = 1000000.0_fxd;
+            
+            // Test less than with values that would overflow
+            EXPECT_TRUE(1.0_fxr < biggerThanRadianMax);
+            EXPECT_TRUE(100.0_fx < veryLargeVal);
+            EXPECT_FALSE(biggerThanRadianMax < 1.0_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedEqualLesserEdgeCase) {
+            // Values that would overflow if converted
+            fixed biggerThanRadianMax = 100.0_fx;
+            doubleFixed veryLargeVal = 1000000.0_fxd;
+            
+            // Test less than or equal with values that would overflow
+            EXPECT_TRUE(1.0_fxr <= biggerThanRadianMax);
+            EXPECT_TRUE(100.0_fx <= veryLargeVal);
+            EXPECT_FALSE(biggerThanRadianMax <= 1.0_fxr);
+            
+            // Test at the boundary
+            EXPECT_TRUE(1.0_fx <= 1.0_fxd);
+            EXPECT_TRUE(1.0_fxr <= 1.0_fx);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedEqualGreaterEdgeCase) {
+            // Values that would overflow if converted
+            fixed biggerThanRadianMax = 100.0_fx;
+            doubleFixed veryLargeVal = 1000000.0_fxd;
+            
+            // Test greater than or equal with values that would overflow
+            EXPECT_TRUE(biggerThanRadianMax >= 1.0_fxr);
+            EXPECT_TRUE(veryLargeVal >= 100.0_fx);
+            EXPECT_FALSE(1.0_fxr >= biggerThanRadianMax);
+            
+            // Test at the boundary
+            EXPECT_TRUE(1.0_fxd >= 1.0_fx);
+            EXPECT_TRUE(1.0_fx >= 1.0_fxr);
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNotEqualEdgeCase) {
+            // Values that would overflow if converted
+            fixed biggerThanRadianMax = 100.0_fx;
+            doubleFixed veryLargeVal = 1000000.0_fxd;
+            
+            // Test not equal with values that would overflow
+            EXPECT_TRUE(biggerThanRadianMax != 1.0_fxr);
+            EXPECT_TRUE(veryLargeVal != 100.0_fx);
+            EXPECT_FALSE(1.0_fx != 1.0_fxd);
+        }
+
+        TEST(FixedPointComparison, CrossFixedNegativeEqualEdgeCase) {
+            // Create negative values that would underflow if converted to unsigned
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test cross-type equality with values that would underflow
+            EXPECT_FALSE(negativeFixed == 0.5_fxr); // Negative vs unsigned
+            EXPECT_FALSE(largeNegative == -10.0_fx); // Large negative vs small negative
+            EXPECT_TRUE(negativeFixed == -10.0_fxd); // Same negative value across types
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNegativeGreaterEdgeCase) {
+            // Values that would underflow if converted incorrectly
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test greater than with negative values and unsigned types
+            EXPECT_FALSE(negativeFixed > 0.1_fxr); // Negative is never > unsigned
+            EXPECT_FALSE(largeNegative > negativeFixed); // More negative isn't greater
+            EXPECT_TRUE(negativeFixed > largeNegative); // Less negative is greater
+            EXPECT_TRUE(0.1_fxr > negativeFixed); // Unsigned is always > negative
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNegativeLesserEdgeCase) {
+            // Values that would underflow if converted incorrectly
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test less than with negative values and unsigned types
+            EXPECT_TRUE(negativeFixed < 0.1_fxr); // Negative is always < unsigned
+            EXPECT_TRUE(largeNegative < negativeFixed); // More negative is less
+            EXPECT_FALSE(negativeFixed < largeNegative); // Less negative isn't less
+            EXPECT_FALSE(0.1_fxr < negativeFixed); // Unsigned is never < negative
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNegativeEqualLesserEdgeCase) {
+            // Values that would underflow if converted incorrectly
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test less than or equal with negative values
+            EXPECT_TRUE(negativeFixed <= 0.1_fxr); // Negative is always <= unsigned
+            EXPECT_TRUE(largeNegative <= negativeFixed); // More negative is less
+            EXPECT_FALSE(negativeFixed <= largeNegative); // Less negative isn't less/equal
+            EXPECT_FALSE(0.1_fxr <= negativeFixed); // Unsigned is never <= negative
+            
+            // Test equal values
+            EXPECT_TRUE(negativeFixed <= -10.0_fxd); // Same value across types
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNegativeEqualGreaterEdgeCase) {
+            // Values that would underflow if converted incorrectly
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test greater than or equal with negative values
+            EXPECT_FALSE(negativeFixed >= 0.1_fxr); // Negative is never >= unsigned
+            EXPECT_FALSE(largeNegative >= negativeFixed); // More negative isn't greater/equal
+            EXPECT_TRUE(negativeFixed >= largeNegative); // Less negative is greater
+            EXPECT_TRUE(0.1_fxr >= negativeFixed); // Unsigned is always >= negative
+            
+            // Test equal values
+            EXPECT_TRUE(negativeFixed >= -10.0_fxd); // Same value across types
+        }
+        
+        TEST(FixedPointComparison, CrossFixedNegativeNotEqualEdgeCase) {
+            // Values that would underflow if converted incorrectly
+            fixed negativeFixed = -10.0_fx;
+            doubleFixed largeNegative = -1000000.0_fxd;
+            
+            // Test not equal with negative values
+            EXPECT_TRUE(negativeFixed != 0.1_fxr); // Negative is never equal to unsigned
+            EXPECT_TRUE(largeNegative != negativeFixed); // Different negative values
+            EXPECT_FALSE(negativeFixed != -10.0_fxd); // Same value across types should be equal
+        }
+        
+        TEST(FixedPointComparison, CrossFixedZeroWithNegative) {
+            // Special cases with zero
+            EXPECT_TRUE(0_fx == 0_fxr); // Zero is the same across all types
+            EXPECT_TRUE(0_fxd > -1.0_fx); // Zero > negative
+            EXPECT_TRUE(-1.0_fx < 0_fxr); // Negative < unsigned zero
+            EXPECT_FALSE(-0.0_fx != 0_fxd); // Negative zero == zero
+        }
+    #pragma endregion
+#pragma endregion
+
+// Tests if simple operations between fixed point numbers work
 #pragma region Math Operations
 #pragma endregion
 
