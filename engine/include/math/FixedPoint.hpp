@@ -257,6 +257,7 @@ protected:
                     }
                 }
 
+                // Recursive long addition meant to guard against overflow and process integer point in constexpr time.
                 static constexpr uint64 processIntegerPointRecursive(
                     const std::array<uint8, m_literalDecimalMax>& integerPointStore, 
                     const size_t integerPointIndex, 
@@ -274,6 +275,7 @@ protected:
                     return processIntegerPointRecursive(integerPointStore, integerPointIndex - 1, prevOutput + integerPointStore[integerPointIndex - 1] * multIter, multIter * 10, negative, limit, maxMult, maxMostSigDigit);
                 }
 
+                // Creates integer from a store of integer decimal points while guarding for overflow.
                 static constexpr std::pair<uint64, bool> processIntegerPoint(const std::array<uint8, m_literalDecimalMax>& integerPointStore, const size_t integerPointSize, const bool negative) {
                     // Hard limit for bits allocated to represent integers
                     uint64 limit = getIntegerLimit(negative);
@@ -285,6 +287,7 @@ protected:
                     return std::pair<uint64, bool>(integerPoint, integerPoint == limit);
                 }
             
+                // Recursive long multiplication meant to guard against overflow and process decimal point in constexpr time
                 static constexpr uint64 processDecimalPointRecursive(const std::array<uint8, m_literalDecimalMax>& decimalPointStore, 
                     const bool negative, 
                     const bool atLimit,
@@ -305,6 +308,7 @@ protected:
                     return processDecimalPointRecursive(decimalPointStore, negative, atLimit, decIndex - 1, (prevOutput / 10 ) + (decimalPointStore[decIndex - 1] * mult));
                 }
 
+                // Creates binary decimal representation of fed in decimal points while guarding for overflow.
                 static constexpr uint64 processDecimalPoint(const std::array<uint8, m_literalDecimalMax>& decimalPointStore, const size_t decimalPointSize, const bool negative, const bool atLimit) {
                     constexpr uint8 maxDecimalPrecision = 59;
                     constexpr uint8 repDecimalBit = floorRepDecBit<maxDecimalPrecision>();
