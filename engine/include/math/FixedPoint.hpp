@@ -6,6 +6,7 @@
 #include "DetMathInt.hpp"
 
 #include <bit>
+#include <string_view>
 #include <utility>
 #include <cstddef>
 
@@ -28,6 +29,7 @@ protected:
 
     #pragma region Constexpr
         // A bunch of helper variables calculated at compile time 
+        static constexpr size_t m_literalDecimalMax = 255;
 
         static constexpr bool m_isSigned = std::is_signed_v<Base>;
         // Equivalent to 2^DecimalBits
@@ -105,20 +107,21 @@ protected:
 
     // >>> Private helper functions made to assist public functions <<<
     #pragma region Helpers
-        // Allows direct constructor to call in integer constructor logic without duplication logic
-        template <Int Base2>
-        constexpr void integerInit(Base2 base) {
-            // A negative number cannot be used to construct a unsigned fixed point
-            ASSERT_LOG(m_isSigned || base >= 0, "Negative integer casted into unsigned fixed point");
-            // Makes sure that base number isn't too large to even be stored by m_baseInt 
-            ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits), "Integer [" << base << "] higher than integer limit [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
-            ASSERT_LOG(!FlowGuard || !m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits), "Integer [" << base << "] lower than integer minimum [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
+        #pragma region Constructor
+            // Allows direct constructor to call in integer constructor logic without duplication logic
+            template <Int Base2>
+            constexpr void integerInit(Base2 base) {
+                // A negative number cannot be used to construct a unsigned fixed point
+                ASSERT_LOG(m_isSigned || base >= 0, "Negative integer casted into unsigned fixed point");
+                // Makes sure that base number isn't too large to even be stored by m_baseInt 
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits), "Integer [" << base << "] higher than integer limit [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
+                ASSERT_LOG(!FlowGuard || !m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits), "Integer [" << base << "] lower than integer minimum [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
 
-            m_baseInt = base << DecimalBits;
-        }
+                m_baseInt = base << DecimalBits;
+            }
 
-        template <Int Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
-        constexpr FixedPoint(Base2 base, bool direct){
+            template <Int Base2, typename = std::enable_if_t<sizeof(Base) >= sizeof(Base2)>>
+            constexpr FixedPoint(Base2 base, bool direct){
             if (direct) { 
                 m_baseInt = base;
             }
@@ -126,22 +129,233 @@ protected:
                 integerInit(base);
             }
         }
-
-        // Allows decimal bit to be clamped to a certain max number, used in cases where precision needs to be sacrificed to prevent overflow.
-        template <uint8 maxNum>
-        static inline constexpr uint8 floorRepDecBit() {
-            if constexpr (DecimalBits > maxNum) {
-                return maxNum;
+        
+            // >>> Helpers that allow for string literals to be called in constexpr time<<<
+            static constexpr std::pair<size_t, bool> checkNegative(const std::string_view str, const size_t index) {
+                if (str[index] == '-') {
+                    return std::pair<size_t, bool> (index + 1, true);
+                }
+                return std::pair<size_t, bool> (index, false);
             }
-            else {
-                return DecimalBits;
-            }
-        }    
 
-        // Packs base int into a unsigned int that can be bitcasted into a floating point number in IEEE 754 format
-        // We don't need to be as cautious in terms of accounting for all possible variations of this, we only need to ensure that it works for float and double
-        template <FloatingPoint retFloat, UnsignedInt uFinalInt, UnsignedInt uCorInt, size_t mantissaSize, typename = std::enable_if_t<sizeof(retFloat) == sizeof(uFinalInt) && sizeof(uFinalInt) <= sizeof(uCorInt)>>
-        inline retFloat processFloatBits() const {
+            #pragma region String Literal Constructor
+                // Checks if character can be parsed into into a number that isn't 0
+                static constexpr bool charNon0NumParseCheck(char parse) {
+                    return parse == '1' ||
+                        parse == '2' ||
+                        parse == '3' ||
+                        parse == '4' ||
+                        parse == '5' ||
+                        parse == '6' ||
+                        parse == '7' ||
+                        parse == '8' ||
+                        parse == '9';
+                }
+
+                // Parses character into a number that isn't 0
+                static constexpr uint8 charNon0NumParse(char parse) {
+                    switch(parse) {
+                        case '1':
+                            return 1;
+                        case '2':
+                            return 2;
+                        case '3':
+                            return 3;
+                        case '4':
+                            return 4;
+                        case '5':
+                            return 5;
+                        case '6':
+                            return 6;
+                        case '7':
+                            return 7;
+                        case '8':
+                            return 8;
+                        case '9':
+                            return 9;
+                        default:
+                            ASSERT_LOG(false, "Invalid character " << parse << " passed");
+                            return 0;
+                    }
+                }
+
+                // Recursively gathers sizes of integer point and decimal point along with inserting actual values into integer
+                typedef std::pair<std::pair<std::array<uint8, m_literalDecimalMax>, std::array<uint8, m_literalDecimalMax>>, std::pair<size_t, size_t>> gatherPointOutput;
+                static constexpr gatherPointOutput gatherPoint(
+                    const std::string_view& str,
+                    const size_t start,
+                    const size_t end,
+                    const gatherPointOutput prevOutput,
+                    const bool pastDecimalPoint,
+                    const size_t currentIndex ) 
+                {
+                    if(currentIndex >= m_literalDecimalMax || start == end) {
+                        return prevOutput;
+                    }
+
+                    std::array<uint8, m_literalDecimalMax> integerPoint = prevOutput.first.first;
+                    std::array<uint8, m_literalDecimalMax> decimalPoint = prevOutput.first.second;
+
+                    if(charNon0NumParseCheck(str[start])) {
+                        if (pastDecimalPoint) {
+                            decimalPoint[currentIndex] = charNon0NumParse(str[start]);
+                            std::pair<size_t, size_t> newSizeOutput = std::pair<size_t, size_t>(prevOutput.second.first, prevOutput.second.second + 1);
+                            gatherPointOutput newOutput = gatherPointOutput(std::pair<std::array<uint8, m_literalDecimalMax>,std::array<uint8, m_literalDecimalMax>>(integerPoint, decimalPoint), newSizeOutput);
+                            return gatherPoint(str, start + 1, end, newOutput, pastDecimalPoint, currentIndex + 1);
+                        }
+                        else {
+                            integerPoint[currentIndex] = charNon0NumParse(str[start]); 
+                            std::pair<size_t, size_t> newSizeOutput = std::pair<size_t, size_t>(prevOutput.second.first + 1, prevOutput.second.second);
+                            gatherPointOutput newOutput = gatherPointOutput(std::pair<std::array<uint8, m_literalDecimalMax>,std::array<uint8, m_literalDecimalMax>>(integerPoint, decimalPoint), newSizeOutput);
+                            return gatherPoint(str, start + 1, end, newOutput, pastDecimalPoint, currentIndex + 1);
+                        }
+                    }
+                    else {
+                        if (str[start] == '.') {
+                            ASSERT_LOG(!pastDecimalPoint, "More than a single decimal mark");
+                            return gatherPoint(str, start + 1, end, prevOutput, true, 0);
+                        }
+                        else if (str[start] == '0') {
+                            // Skip over any leading zeros
+                            if(prevOutput.second == std::pair<size_t, size_t>(0,0) && !pastDecimalPoint) {
+                                return gatherPoint(str, start + 1, end, prevOutput, pastDecimalPoint, currentIndex);
+                            }
+                            else {
+                                if (pastDecimalPoint) {
+                                    decimalPoint[currentIndex] = 0;
+                                    std::pair<size_t, size_t> newSizeOutput = std::pair<size_t, size_t>(prevOutput.second.first, prevOutput.second.second + 1);
+                                    gatherPointOutput newOutput = gatherPointOutput(std::pair<std::array<uint8, m_literalDecimalMax>,std::array<uint8, m_literalDecimalMax>>(integerPoint, decimalPoint), newSizeOutput);
+                                    return gatherPoint(str, start + 1, end, newOutput, pastDecimalPoint, currentIndex + 1);
+                                }
+                                else {
+                                    integerPoint[currentIndex] = 0; 
+                                    std::pair<size_t, size_t> newSizeOutput = std::pair<size_t, size_t>(prevOutput.second.first + 1, prevOutput.second.second);
+                                    gatherPointOutput newOutput = gatherPointOutput(std::pair<std::array<uint8, m_literalDecimalMax>,std::array<uint8, m_literalDecimalMax>>(integerPoint, decimalPoint), newSizeOutput);
+                                    return gatherPoint(str, start + 1, end, newOutput, pastDecimalPoint, currentIndex + 1);
+                                }
+                            }
+                        }
+                        else {
+                            // Invalid char
+                            ASSERT_LOG(false, "Invalid character " << str[start] << " passed");
+                            return gatherPointOutput();
+                        }
+                    }
+                }
+
+                static constexpr gatherPointOutput gatherPoints(const std::string_view& str, const size_t start, const size_t end) {
+                    return gatherPoint(str, start, end, gatherPointOutput(), false, 0);
+
+                }
+            
+                static constexpr uint64 getIntegerLimit(const bool negative) {
+                    if (m_isSigned && negative) {
+                        return uint64(-(m_minIntegerPoint + 1)) + 1;
+                    }
+                    else {
+                        return m_maxIntegerPoint;
+                    }
+                }
+
+                static constexpr uint64 processIntegerPointRecursive(
+                    const std::array<uint8, m_literalDecimalMax>& integerPointStore, 
+                    const size_t integerPointIndex, 
+                    const uint64 prevOutput, 
+                    const uint64 multIter, 
+                    const bool negative,
+                    const uint64 limit,
+                    const uint64 maxMult,
+                    const uint8 maxMostSigDigit
+                ) {
+                    ASSERT_LOG(!FlowGuard || !(multIter == maxMult && integerPointStore[integerPointIndex - 1] > maxMostSigDigit) && prevOutput <= limit, "inputted value exceeds max size of " << limit);
+                    if(integerPointIndex <= 0) {
+                        return prevOutput;
+                    } 
+                    return processIntegerPointRecursive(integerPointStore, integerPointIndex - 1, prevOutput + integerPointStore[integerPointIndex - 1] * multIter, multIter * 10, negative, limit, maxMult, maxMostSigDigit);
+                }
+
+                static constexpr std::pair<uint64, bool> processIntegerPoint(const std::array<uint8, m_literalDecimalMax>& integerPointStore, const size_t integerPointSize, const bool negative) {
+                    // Hard limit for bits allocated to represent integers
+                    uint64 limit = getIntegerLimit(negative);
+                    
+                    uint64 maxMult = DetMathInt::pow(10, DetMathInt::log(uint64(1) << 63, 10));
+                    uint8 maxMostSigDigit = limit/maxMult;
+
+                    uint64 integerPoint = processIntegerPointRecursive(integerPointStore, integerPointSize, 0, 1, negative, limit, maxMult, maxMostSigDigit);
+                    return std::pair<uint64, bool>(integerPoint, integerPoint == limit);
+                }
+            
+                static constexpr uint64 processDecimalPointRecursive(const std::array<uint8, m_literalDecimalMax>& decimalPointStore, 
+                    const bool negative, 
+                    const bool atLimit,
+                    const size_t decIndex,
+                    const uint64 prevOutput) {
+                    constexpr uint8 maxDecimalPrecision = 59;
+                    constexpr uint8 repDecimalBit = floorRepDecBit<maxDecimalPrecision>();
+                    const uint64 mult = (uint64(1) << repDecimalBit);
+
+                    if(decIndex <= 0) {
+                        return prevOutput / 10;
+                    }
+                    // Finds decimal point by long multiplication
+                    if(decIndex == 1 && ((prevOutput / 10 ) + (decimalPointStore[decIndex - 1] * mult)) % 10 >= 5) {
+                        // Rounding logic
+                        return processDecimalPointRecursive(decimalPointStore, negative, atLimit, decIndex - 1, ((prevOutput / 10 ) + (decimalPointStore[decIndex - 1] * mult)) + 10);
+                    }
+                    return processDecimalPointRecursive(decimalPointStore, negative, atLimit, decIndex - 1, (prevOutput / 10 ) + (decimalPointStore[decIndex - 1] * mult));
+                }
+
+                static constexpr uint64 processDecimalPoint(const std::array<uint8, m_literalDecimalMax>& decimalPointStore, const size_t decimalPointSize, const bool negative, const bool atLimit) {
+                    constexpr uint8 maxDecimalPrecision = 59;
+                    constexpr uint8 repDecimalBit = floorRepDecBit<maxDecimalPrecision>();
+
+                    uint64 decimalPoint = processDecimalPointRecursive(decimalPointStore, negative, atLimit, decimalPointSize, 0);
+
+                    if constexpr (DecimalBits > repDecimalBit) {
+                        if constexpr (DecimalBits == 64) {
+                            // Covers possibility that decimal bit would overflow before being checked
+                            ASSERT_LOG(!FlowGuard || decimalPoint != (uint64(1) << maxDecimalPrecision), "Fixed point number exceeds max size after rounding");
+                        }
+                        decimalPoint <<= (DecimalBits - maxDecimalPrecision);
+                    }
+
+                    // Checks to make sure that rounding won't result in overflow
+                    ASSERT_LOG(!FlowGuard || !atLimit || (decimalPoint <= m_maxDecimalPoint), "Fixed point number exceeds max size after rounding");
+
+                    // Checks to see if any value at all is recorded in case of overflow at negative
+                    // (Two's compliment adds a value of space to the int point if decimal point is clear)
+                    ASSERT_LOG(!FlowGuard || !(atLimit && negative && decimalPoint > 0), "Fixed point number exceeds max size");
+
+                    return decimalPoint;
+                }
+            
+                static constexpr uint64 combineFinal(uint64 integerPoint, uint64 decimalPoint) {
+                    if constexpr (m_decimalBitsMaxed) {
+                        return decimalPoint;
+                    }
+                    else {
+                        return (integerPoint << DecimalBits) + decimalPoint;
+                    }
+                }
+            #pragma endregion
+        #pragma endregion
+
+        #pragma region Cast
+            // Allows decimal bit to be clamped to a certain max number, used in cases where precision needs to be sacrificed to prevent overflow.
+            template <uint8 maxNum>
+            static inline constexpr uint8 floorRepDecBit() {
+                if constexpr (DecimalBits > maxNum) {
+                    return maxNum;
+                }
+                else {
+                    return DecimalBits;
+                }
+            }    
+
+            // Packs base int into a unsigned int that can be bitcasted into a floating point number in IEEE 754 format
+            // We don't need to be as cautious in terms of accounting for all possible variations of this, we only need to ensure that it works for float and double
+            template <FloatingPoint retFloat, UnsignedInt uFinalInt, UnsignedInt uCorInt, size_t mantissaSize, typename = std::enable_if_t<sizeof(retFloat) == sizeof(uFinalInt) && sizeof(uFinalInt) <= sizeof(uCorInt)>>
+            inline retFloat processFloatBits() const {
             // Defining Constexpr variables
             // 1 bits for everything in mantissa bit space
             constexpr uCorInt mantissaOp = std::numeric_limits<uCorInt>::max() >> ((sizeof(uCorInt) * 8) - mantissaSize);
@@ -177,10 +391,12 @@ protected:
 
             return std::bit_cast<retFloat>(uFinalInt(bits));
         }
+        #pragma endregion
 
-        // Reduces code duplication of toString.
-        // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
-        inline std::string unsignedToString(processInt num, bool stopOverflow) const {      
+        #pragma region String representation
+            // Reduces code duplication of toString.
+            // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
+            inline std::string unsignedToString(processInt num, bool stopOverflow) const {      
             // Adds integer point    
             std::string retString; 
             if constexpr (m_decimalBitsMaxed) {
@@ -233,10 +449,11 @@ protected:
             }
             return retString;
         }
-        
+        #pragma endregion
+
         // Allows for code deduplication between integer comparison and fixed point comparison
         #pragma region Comparison
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool equals(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base>) {
@@ -258,7 +475,7 @@ protected:
                 }
             }
 
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool greater(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
@@ -271,16 +488,16 @@ protected:
                 else {
                     if constexpr (DecimalBits2 > DecimalBits){
                         constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, num));
+                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, num));
                     }
                     else {
                         constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_less(num, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(num, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(num) << decDiff));
+                        return std::cmp_less_equal(num, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(num, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(num) << decDiff));
                     }
                 }
             }
 
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool lesser(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
@@ -293,16 +510,16 @@ protected:
                 else {
                     if constexpr (DecimalBits2 > DecimalBits){
                         constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, num));
+                        return std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, num));
                     }
                     else {
                         constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_greater(num, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(num, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(num) << decDiff));
+                        return std::cmp_greater_equal(num, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(num, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(num) << decDiff));
                     }
                 }
             }
 
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool greaterEqual(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
@@ -324,7 +541,7 @@ protected:
                 }
             }
 
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool lesserEqual(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
@@ -346,7 +563,7 @@ protected:
                 }
             }
 
-            template <typename Base2, uint8 DecimalBits2>
+            template <Int Base2, uint8 DecimalBits2>
             constexpr inline bool notEqual(const Base2 num) const {
                 if constexpr (DecimalBits2 == DecimalBits) {
                     if constexpr (std::is_same_v<Base2, Base>) {
@@ -370,8 +587,11 @@ protected:
         #pragma endregion
     #pragma endregion
 public:
-    // >>> Constructors <<<
+
+    // >>> Constructor/Deconstructor <<<
     #pragma region Constructors
+        constexpr ~FixedPoint() {};
+
         // Fixed point empty constructor leaves a value of 0
         constexpr FixedPoint() : m_baseInt( 0 ) {};
 
@@ -424,172 +644,42 @@ public:
         // Will round number to closes applicable fixed point.
         // If debugger is on the constructor will fail if the number goes past the max of the fixed point.
         // It can at most be precise to 59 decimal bits due to overflow restrictions
-        // Is capped to a digit length of 254, past that the constructor will stop reading
+        // Is capped to a integer digit length of 255 and a decimal digit length of 255 and will fail on any number that goes past that
         constexpr FixedPoint(const char* str) {
+            const std::string_view convertString = std::string_view(str);
             // Checks if reader has anything to read
-            ASSERT_LOG(strlen(str) > 0, "Constructor has nothing to read off of");
+            ASSERT_LOG(convertString.size() > 0, "Constructor has nothing to read off of");
 
-            bool negative = false;
-            bool hasReachedPoint = false;
+            auto checkNegativeResult = checkNegative(convertString, 0);
 
-            std::vector<uint8> integerPointStore{ };
-            std::vector<uint8> decimalPointStore{ };
-            // Stores and collects each digit to be processed into value
-            for(uint8 charIter = 0 ; charIter < 255  && charIter < std::strlen(str) ; charIter++) {
-                // Checks for negative number
-                if(charIter == 0) {
-                    if(str[0] == '-') {
-                        // Makes sure unsigned numbers are not marked with negative
-                        ASSERT_LOG(m_isSigned, "Unsigned number marked as negative");
-                        negative = true;
-                        continue;
-                    }
-                }
-        
-                // Processes char into a integer
-                uint8 val = -1;
-                switch(str[charIter]) {
-                    case '.':
-                        // Checks for a second decimal point
-                        ASSERT_LOG(!hasReachedPoint, "A second decimal point exists within " << str);
-                        hasReachedPoint = true;
-                        continue;
-                    case '0':
-                        // Prevents extraneous 0s from being stored
-                        if(!hasReachedPoint && integerPointStore.size() == 0) {
-                            continue;
-                        }
-                        else {
-                            val = 0;
-                        }
-                        break;
-                    case '1':
-                        val = 1;
-                        break;
-                    case '2':
-                        val = 2;
-                        break;
-                    case '3':
-                        val = 3;
-                        break;
-                    case '4':
-                        val = 4;
-                        break;
-                    case '5':
-                        val = 5;
-                        break;
-                    case '6':
-                        val = 6;
-                        break;
-                    case '7':
-                        val = 7;
-                        break;
-                    case '8':
-                        val = 8;
-                        break;
-                    case '9':
-                        val = 9;
-                        break;
-                    default:
-                        // Invalid char
-                        ASSERT_LOG(false, "Invalid character " << str[charIter] << " passed");
-                }
-                if(hasReachedPoint) {
-                    decimalPointStore.push_back(val);
-                }
-                else {
-                    integerPointStore.push_back(val);
-                }
-        
-        
-            }
-        
+            bool negative = checkNegativeResult.second;
+            ASSERT_LOG((m_isSigned || !negative), "Negative number used to construct unsigned Fixed point");
+
+            auto gatherPointsResult = gatherPoints(convertString, checkNegativeResult.first, convertString.size());
+            std::pair<std::array<uint8, m_literalDecimalMax>,std::array<uint8, m_literalDecimalMax>>& points = gatherPointsResult.first;
+            std::pair<size_t, size_t>& pointSizes = gatherPointsResult.second;
+            std::array<uint8, m_literalDecimalMax>& integerPointStore = points.first;
+            std::array<uint8, m_literalDecimalMax>& decimalPointStore = points.second;
+            size_t integerPointSize = pointSizes.first;
+            size_t decimalPointSize = pointSizes.second;
+
             // Processes integer part of number
-            uint64 integerPoint = 0;
-            #if DEBUGGING 
-            bool atLimit = false;
-            #endif 
-            {
-                uint64 multIter = 1;
-                
-                #if DEBUGGING
-                // Hard limit for bits allocated to represent integers
-                uint64 limit;
-                if (m_isSigned && negative) {
-                    limit = uint64(-(m_minIntegerPoint + 1)) + 1;
-                }
-                else {
-                    limit = m_maxIntegerPoint;
-                }
-                
-                uint64 maxMult = DetMathInt::pow(10, DetMathInt::log(uint64(1) << 63, 10));
-                uint8 maxMostSigDigit = limit/maxMult;
-                #endif
-
-                for(size_t integerIter = integerPointStore.size() ; integerIter > 0 ; integerIter--) {
-                    integerPoint += integerPointStore[integerIter - 1] * multIter;
-                    // Makes sure that integer doesn't exceed max size
-                    ASSERT_LOG(!FlowGuard || !(multIter == maxMult && integerPointStore[integerIter - 1] > maxMostSigDigit) && integerPoint <= limit, str << " exceeds max size of " << limit);
-                    multIter *= 10;
-                }   
-
-                #if DEBUGGING
-                if(integerPoint == limit) {
-                    atLimit = true;
-                }
-                #endif
-            }
+            auto processIntegerPointResult = processIntegerPoint(integerPointStore, integerPointSize, negative);
+            uint64 integerPoint = processIntegerPointResult.first;
+            bool atLimit = processIntegerPointResult.second;
 
             // More complex part processing decimal point
             // Done through long addition to prevent overflow
             // Will sacrifice some precision to prevent overflow if needed
-            constexpr uint8 maxDecimalPrecision = 59;
-            constexpr uint8 repDecimalBit = floorRepDecBit<maxDecimalPrecision>();
-            uint64 decimalPoint = 0;
-            {
-                const uint64 mult = (uint64(1) << repDecimalBit);
-
-                // Adds up remainders through long addition
-                for(size_t decimalIter = decimalPointStore.size() ; decimalIter > 0 ; decimalIter--) {
-                    size_t decIdx = decimalIter - 1;
-                    decimalPoint /= 10;
-                    decimalPoint += decimalPointStore[decIdx]  * mult;
-
-                    // Rounding logic
-                    if(decimalIter == 1 && decimalPoint % 10 >= 5) {
-                        decimalPoint += 10;
-                    }
-                }
-                
-                decimalPoint /= 10;
-                if constexpr (DecimalBits > repDecimalBit) {
-                    if constexpr (DecimalBits == 64) {
-                        // Covers possibility that decimal bit would overflow before being checked
-                        ASSERT_LOG(!FlowGuard || decimalPoint != (uint64(1) << maxDecimalPrecision), str << " exceeds max size after rounding");
-                    }
-                    decimalPoint <<= (DecimalBits - maxDecimalPrecision);
-                }
-
-                // Checks to make sure that rounding won't result in overflow
-                ASSERT_LOG(!FlowGuard || !atLimit || (decimalPoint <= m_maxDecimalPoint), str << " exceeds max size after rounding");
-
-                // Checks to see if any value at all is recorded in case of overflow at negative
-                // (Two's compliment adds a value of space to the int point if decimal point is clear)
-                ASSERT_LOG(!FlowGuard || !(atLimit && negative && decimalPoint > 0), str << " exceeds max size");
-            }
+            uint64 decimalPoint = processDecimalPoint(decimalPointStore, decimalPointSize, negative, atLimit);
 
             // Combines Integer point and decimal point
-            uint64 final;
-            if constexpr (m_decimalBitsMaxed) {
-                final = decimalPoint;
-            }
-            else {
-                final = (integerPoint << DecimalBits) + decimalPoint;
-            }
+            uint64 final = combineFinal(integerPoint, decimalPoint);
+
             // Adjusts final number based on whether the number was negative or not
             if constexpr (m_isSigned) {
                 if(negative) {
-                    m_baseInt =  -1 * Base(final);
+                    m_baseInt =  (-1 * Base(final - 1) - 1);
                 }
                 else {
                     m_baseInt = Base(final);
@@ -599,145 +689,102 @@ public:
                 m_baseInt = Base(final);
             }
         }
-
     #pragma endregion
 
     // >>> Comparison Operators (==, >, <, ect) <<< 
     #pragma region Comparison
-        #pragma Fixed Point
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+        #pragma region Fixed Point
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator ==(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base>) {
-                        return m_baseInt == rhs.m_baseInt;
-                    }
-                    else {
-                        return std::cmp_equal(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && std::cmp_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && std::cmp_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
-                    }
-                }
+                return equals<Base2, DecimalBits2>(rhs.m_baseInt);
             }
 
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator >(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return m_baseInt > rhs.m_baseInt;
-                    }
-                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return std::cmp_greater(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(m_baseInt, Base(rhs.m_baseInt) << decDiff));
-                    }
-                }
+                return greater<Base2, DecimalBits2>(rhs.m_baseInt);
             }
 
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator <(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return m_baseInt < rhs.m_baseInt;
-                    }
-                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return std::cmp_less(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less(m_baseInt, Base(rhs.m_baseInt) << decDiff));
-                    }
-                }
+                return lesser<Base2, DecimalBits2>(rhs.m_baseInt);
             }
 
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator >=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return m_baseInt >= rhs.m_baseInt;
-                    }
-                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return std::cmp_greater_equal(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) && (std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_greater_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_less_equal(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) && (std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
-                    }
-                }
+                return greaterEqual<Base2, DecimalBits2>(rhs.m_baseInt);
             }
 
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator <=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return m_baseInt <= rhs.m_baseInt;
-                    }
-                    else if constexpr (!std::is_same_v<Base2, Base> && DecimalBits2 == DecimalBits) {
-                        return std::cmp_less_equal(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_less_equal(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) && (std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_less_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt));
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_greater_equal(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) && (std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_less_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff));
-                    }
-                }
+                return lesserEqual<Base2, DecimalBits2>(rhs.m_baseInt);
             }
 
-            template <typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
             constexpr bool operator !=(const FixedPoint<Base2, DecimalBits2, FlowGuard2>& rhs) const {
-                if constexpr (DecimalBits2 == DecimalBits) {
-                    if constexpr (std::is_same_v<Base2, Base>) {
-                        return m_baseInt != rhs.m_baseInt;
-                    }
-                    else {
-                        return std::cmp_not_equal(m_baseInt, rhs.m_baseInt);
-                    }
-                }
-                else {
-                    if constexpr (DecimalBits2 > DecimalBits){
-                        constexpr uint8 decDiff = DecimalBits2 - DecimalBits;
-                        return std::cmp_less(m_baseInt, std::numeric_limits<Base2>::min() >> decDiff) || std::cmp_greater(m_baseInt, std::numeric_limits<Base2>::max() >> decDiff) || std::cmp_not_equal(Base2(m_baseInt) << decDiff, rhs.m_baseInt);
-                    }
-                    else {
-                        constexpr uint8 decDiff = DecimalBits - DecimalBits2;
-                        return std::cmp_less(rhs.m_baseInt, std::numeric_limits<Base>::min() >> decDiff) || std::cmp_greater(rhs.m_baseInt, std::numeric_limits<Base>::max() >> decDiff) || std::cmp_not_equal(m_baseInt, Base(rhs.m_baseInt) << decDiff);
-                    }
-                }
+                return notEqual<Base2, DecimalBits2>(rhs.m_baseInt);
             }
         #pragma endregion
-        #pragma Integer
+
+        #pragma region Integer
+            template <Int Base2>
+            constexpr bool operator ==(const Base2 rhs) const {
+                return equals<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator ==(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.equals<Base2, 0>(lhs);
+            }
+
+            template <Int Base2>
+            constexpr bool operator >(const Base2 rhs) const {
+                return greater<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator >(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.lesser<Base2, 0>(lhs);
+            }
+
+            template <Int Base2>
+            constexpr bool operator <(const Base2 rhs) const {
+                return lesser<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator <(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.greater<Base2, 0>(lhs);
+            }
+
+            template <Int Base2>
+            constexpr bool operator >=(const Base2 rhs) const {
+                return greaterEqual<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator <=(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.greaterEqual<Base2, 0>(lhs);
+            }
+
+            template <Int Base2>
+            constexpr bool operator <=(const Base2 rhs) const {
+                return lesserEqual<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator >=(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.lesserEqual<Base2, 0>(lhs);
+            }
+
+            template <Int Base2>
+            constexpr bool operator !=(const Base2 rhs) const {
+                return notEqual<Base2, 0>(rhs);
+            }
+
+            template <Int Base2>
+            friend bool operator !=(const Base2 lhs, const FixedPoint<Base, DecimalBits, FlowGuard>& rhs) {
+                return rhs.notEqual<Base2, 0>(lhs);
+            }
         #pragma endregion
     #pragma endregion
 
@@ -814,13 +861,13 @@ public:
     #pragma region Casts
         // Casts a FixedPoint number into another FixedPoint number
         template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
-        operator FixedPoint<Base2, DecimalBits2, FlowGuard2> () const {
+        constexpr operator FixedPoint<Base2, DecimalBits2, FlowGuard2> () const {
             return FixedPoint<Base2, DecimalBits2, FlowGuard2>(*this);
         }
 
         // Truncates FixedPoint value to integer.
         template <Int Base2>
-        operator Base2 () const {
+        constexpr operator Base2 () const {
             // Makes sure a negative number is not casted into an unsigned number
             ASSERT_LOG(std::is_signed_v<Base2> || m_baseInt >= 0, "Negative fixed point number ["  << toString().c_str() << "] casted as a unsigned integer");
             // Makes sure number isn't too large to be casted into specified int, flow guard does not apply since int is being casted into
@@ -875,10 +922,19 @@ public:
         }
     #pragma endregion
 
-    // Fetches the underlying integer that the fixed point stores it's data within.
-    Base getData() const {
+    #pragma region Misc
+        static constexpr FixedPoint<Base,DecimalBits,FlowGuard> getMaxValue() {
+            return FixedPoint<Base,DecimalBits,FlowGuard>(std::numeric_limits<Base>::max(),true);
+        }
+        static constexpr FixedPoint<Base,DecimalBits,FlowGuard> getMinValue() {
+            return FixedPoint<Base,DecimalBits,FlowGuard>(std::numeric_limits<Base>::min(),true);
+        }
+
+        // Fetches the underlying integer that the fixed point stores it's data within.
+        constexpr Base getData() const {
         return m_baseInt;
     }
+    #pragma endregion
 };
 
 // Defines typical configurations that fixed point numbers come in
@@ -889,8 +945,7 @@ typedef FixedPoint<uint16, 15, false> radian;
 // Converts text into a fixed point radian.
 // Will round number to closes applicable fixed point.
 // Will fail if the number goes past the max of the fixed point.
-// It can at most be precise to 59 decimal bits due to overflow restrictions.
-// Is capped to a digit length of 254, past that the constructor will stop reading.
+// It can at most be precise to 59 decimal bits due to overflow restrictions. 
 constexpr radian operator"" _fxr(const char* str) {
     return radian(str);
 }
@@ -908,7 +963,6 @@ constexpr doubleFixed operator"" _fxd(const char* str) {
 // Will round number to closes applicable fixed point.
 // Will fail if the number goes past the max of the fixed point.
 // It can at most be precise to 59 decimal bits due to overflow restrictions.
-// Is capped to a digit length of 254, past that the constructor will stop reading.
 constexpr fixed operator"" _fx(const char* str) {
     return fixed(str);
 }

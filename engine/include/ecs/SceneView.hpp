@@ -26,7 +26,7 @@ struct SceneView
   struct Iterator
   {
     Iterator(std::shared_ptr<Scene> pScene, unsigned int index, ComponentMask mask, bool all) 
-    : m_pScene(pScene), m_index(index), m_mask(mask), m_all(all) {}
+    : m_index(index), m_pScene(pScene), m_mask(mask), m_all(all) {}
 
     // give back the entityID we're currently at
     EntityID operator*() const{

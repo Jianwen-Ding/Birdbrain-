@@ -8,16 +8,28 @@
     #include <iostream>
     #include <cassert>
 
-    #define ASSERT(x) assert(x)
-    #define ASSERT_LOG(x, y) \
-    {   \
-        if(!(x)) { \
-            std::cout << y << std::endl; \
-            assert(x); \
-        } \
+    // Will produce an error if debugging is enabled and the statement given is false.
+    #define ASSERT(x)\
+    {\
+        assert(x);\
+    } 
+    // Will simply not log on compile time
+    #define LOG(x)\
+    {\
+        if(!(std::is_constant_evaluated())) {\
+            std::cout << x << std::endl;\
+        }\
     }
-    #define LOG(x) std::cout << x << std::endl
+    // Will produce an error if debugging is enabled and the statement given is false.
+    #define ASSERT_LOG(x, y) \
+    {\
+        if(!(x)) {\
+            LOG(y);\
+            ASSERT(x);\
+        }\
+    }
 #else
+    // 
     #define ASSERT(x) ((void)0)
     #define ASSERT_LOG(x) ((void)0)
     #define ((void)0)
