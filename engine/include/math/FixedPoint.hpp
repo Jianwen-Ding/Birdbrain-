@@ -794,14 +794,112 @@ public:
 
     // >>> Basic Arithmetic Operators (+, -, /, ect) <<<
     #pragma region Arithmetic
-        FixedPoint<Base,DecimalBits,FlowGuard> operator-() const {
+        constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-() const {
             static_assert(m_isSigned, "Attempted to flip sign on a unsigned fixed point number");
             // Due to two's compliment if signed int is equal to min number *-1 cannot happen without overflow
-            ASSERT_LOG(!FlowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min(), "Fixed point number [" << toString().c_str() << "] will overflow on flipped sign");
+            ASSERT_LOG(!FlowGuard || m_isSigned || m_baseInt != std::numeric_limits<Base>::min(), "Fixed point number will overflow on flipped sign");
 
             return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt * -1, true);
         }
+        #pragma region Integer Arithmetic
+            template <Int Base2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+(const Base2 rhs) const {
+                #if DEBUGGING
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(rhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(rhs, std::numeric_limits<Base>::min() >> DecimalBits),  rhs << " will overflow when converted to fixed number");
+                if(rhs > 0) {
+                    ASSERT_LOG(!FlowGuard || std::cmp_less_equal(Base(rhs) << DecimalBits, std::numeric_limits<Base>::max() - std::max(m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                else {
+                    ASSERT_LOG(!FlowGuard || std::cmp_greater_equal(Base(rhs) << DecimalBits, std::numeric_limits<Base>::min() - std::min(m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                #endif
+                
+                return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt + (Base(rhs) << DecimalBits), true);
+            }
 
+            template <Int Base2>
+            friend FixedPoint<Base,DecimalBits,FlowGuard> operator+(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return rhs + lhs;
+            }
+
+            template <Int Base2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-(const Base2 rhs) const {
+                #if DEBUGGING
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(rhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(rhs, std::numeric_limits<Base>::min() >> DecimalBits),  rhs << " will overflow when converted to fixed number");
+                if(rhs < 0) {
+                    ASSERT_LOG(!FlowGuard || std::cmp_less_equal(Base(rhs) << DecimalBits, std::numeric_limits<Base>::max() - std::max(m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                else {
+                    ASSERT_LOG(!FlowGuard || std::cmp_greater_equal(Base(rhs) << DecimalBits, std::numeric_limits<Base>::min() - std::min(m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                #endif
+                
+                return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt - (Base(rhs) << DecimalBits), true);
+            }
+
+            template <Int Base2>
+            friend FixedPoint<Base,DecimalBits,FlowGuard> operator-(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                #if DEBUGGING
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(lhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(lhs, std::numeric_limits<Base>::min() >> DecimalBits),  lhs << " will overflow when converted to fixed number");
+                if(lhs < 0) {
+                    ASSERT_LOG(!FlowGuard || std::cmp_less_equal(Base(lhs) << DecimalBits, std::numeric_limits<Base>::max() - std::max(rhs.m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                else {
+                    ASSERT_LOG(!FlowGuard || std::cmp_greater_equal(Base(lhs) << DecimalBits, std::numeric_limits<Base>::min() - std::min(rhs.m_baseInt,0)), "Adding " << rhs << " will cause overflowed fixed number");
+                }
+                #endif
+
+                return FixedPoint<Base,DecimalBits,FlowGuard>((Base(lhs) << DecimalBits) - rhs.m_baseInt, true);
+            }
+
+            template <Int Base2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator*(const Base2 rhs) const {
+                #if DEBUGGING
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(rhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(rhs, std::numeric_limits<Base>::min() >> DecimalBits),  rhs << " will overflow when converted to fixed number");
+                if(rhs > 0 && m_baseInt != 0) {
+                    if (m_baseInt > 0) {
+                        ASSERT_LOG(std::cmp_less_equal(rhs << DecimalBits, (std::numeric_limits<Base>::max() / m_baseInt)), "Multiplying by " << rhs << " will cause overflowed fixed number");
+                    }
+                    else {
+                        ASSERT_LOG(std::cmp_less_equal(rhs << DecimalBits, (std::numeric_limits<Base>::min() / m_baseInt)), "Multiplying by " << rhs << " will cause overflowed fixed number");
+                    }
+                }
+                else if (rhs != 0 && m_baseInt != 0) {
+                    if (m_baseInt < 0) {
+                        ASSERT_LOG(std::cmp_greater_equal(rhs << DecimalBits, (std::numeric_limits<Base>::max() / m_baseInt)), "Multiplying by " << rhs << " will cause overflowed fixed number");
+                    }
+                    else {
+                        ASSERT_LOG(std::cmp_greater_equal(rhs << DecimalBits, (std::numeric_limits<Base>::min() / m_baseInt)), "Multiplying by " << rhs << " will cause overflowed fixed number");
+                    }
+                }
+                #endif
+
+                return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt * (Base(rhs) << DecimalBits), true);
+            }
+
+            template <Int Base2>
+            friend FixedPoint<Base,DecimalBits,FlowGuard> operator*(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return rhs * lhs;
+            }
+
+            template <Int Base2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator/(const Base2 rhs) const {
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(rhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(rhs, std::numeric_limits<Base>::min() >> DecimalBits),  rhs << " will overflow when converted to fixed number");
+
+                return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt / (Base(rhs) << DecimalBits), true);
+            }
+
+            template <Int Base2>
+            friend FixedPoint<Base,DecimalBits,FlowGuard> operator/(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(lhs, std::numeric_limits<Base>::max() >> DecimalBits) && std::cmp_greater_equal(rhs, std::numeric_limits<Base>::min() >> DecimalBits),  rhs << " will overflow when converted to fixed number");
+
+                return FixedPoint<Base,DecimalBits,FlowGuard>((Base(lhs) << DecimalBits) / rhs.m_baseInt, true);
+            }
+        #pragma endregion
+
+        #pragma region FixedPoint Arithmetic
+            
+        #pragma endregion
         FixedPoint<Base,DecimalBits,FlowGuard> operator*(FixedPoint<Base,DecimalBits,FlowGuard> rhs) const {
             return (rhs.m_baseInt * m_baseInt) << DecimalBits;
         } 
