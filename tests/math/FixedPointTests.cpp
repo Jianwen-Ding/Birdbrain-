@@ -1338,6 +1338,242 @@
 
 // Tests if simple operations between fixed point numbers work
 #pragma region Math Operations
+    #pragma region Integer operations
+        TEST(FixedPointArithmetic, IntegerAdditionTest) {
+            EXPECT_EQ(fixed(3) + 3, 6);
+            EXPECT_EQ(fixed(5) + 3, 8);
+            EXPECT_EQ(fixed(10) + 13, 23);
+
+            EXPECT_EQ(radian(1) + 5, 0);
+            EXPECT_EQ(radian(0) + 3, 1);
+            
+            EXPECT_EQ(doubleFixed(0) + 3, 3);
+            EXPECT_EQ(doubleFixed(4) + 5, 9);
+            EXPECT_EQ(doubleFixed(7) + 100, 107);
+        }
+
+        TEST(FixedPointArithmetic, IntegerInverseAdditionTest) {
+            EXPECT_EQ(3 + fixed(3), 6);
+            EXPECT_EQ(3 + fixed(5), 8);
+            EXPECT_EQ(13 + fixed(10), 23);
+
+            EXPECT_EQ(5 + radian(1), 0);
+            EXPECT_EQ(3 + radian(0), 1);
+            
+            EXPECT_EQ(3 + doubleFixed(0), 3);
+            EXPECT_EQ(5 + doubleFixed(4), 9);
+            EXPECT_EQ(100 + doubleFixed(7), 107);
+        }
+
+        TEST(FixedPointArithmetic, IntegerDecimalAdditionTest) {
+            EXPECT_EQ(fixed("3.125") + 3, fixed("6.125"));
+            EXPECT_EQ(fixed("465.06640625") + 7, fixed("472.06640625"));
+            EXPECT_EQ(fixed("455443.98828125") + 200, fixed("455643.98828125"));
+
+            EXPECT_EQ(radian("1.162109375") + 3, radian("0.162109375"));
+            EXPECT_EQ(radian("1.162109375") + 1, radian("0.162109375"));
+            EXPECT_EQ(radian("0.254058837890625") + 0, radian("0.254058837890625"));
+            EXPECT_EQ(radian("0.254058837890625") + 1, radian("1.254058837890625"));
+            
+            EXPECT_EQ(doubleFixed("4.06396484375") + 123, doubleFixed("127.06396484375"));
+            EXPECT_EQ(doubleFixed("167.5947265625") + 5, doubleFixed("172.5947265625"));
+            EXPECT_EQ(doubleFixed("36.822265625") + 100, doubleFixed("136.822265625"));
+        }
+
+        TEST(FixedPointArithmetic, IntegerInverseDecimalAdditionTest) {
+            EXPECT_EQ(3 + fixed("3.125"), fixed("6.125"));
+            EXPECT_EQ(7 + fixed("465.06640625"), fixed("472.06640625"));
+            EXPECT_EQ(200 + fixed("455443.98828125"), fixed("455643.98828125"));
+
+            EXPECT_EQ(3 + radian("1.162109375"), radian("0.162109375"));
+            EXPECT_EQ(1 + radian("1.162109375"), radian("0.162109375"));
+            EXPECT_EQ(0 + radian("0.254058837890625"), radian("0.254058837890625"));
+            EXPECT_EQ(1 + radian("0.254058837890625"), radian("1.254058837890625"));
+            
+            EXPECT_EQ(123 + doubleFixed("4.06396484375"), doubleFixed("127.06396484375"));
+            EXPECT_EQ(5 + doubleFixed("167.5947265625"), doubleFixed("172.5947265625"));
+            EXPECT_EQ(100 + doubleFixed("36.822265625"), doubleFixed("136.822265625"));
+        }
+
+        TEST(FixedPointArithmetic, IntegerMultiplicationTest) {
+            EXPECT_EQ(fixed(3) * 3, 9);
+            EXPECT_EQ(fixed(5) * 3, 15);
+            EXPECT_EQ(fixed(10) * 13, 130);
+        
+            EXPECT_EQ(radian(1) * 2, 0);
+            EXPECT_EQ(radian(0) * 50, 0);
+            
+            EXPECT_EQ(doubleFixed(0) * 3, 0);
+            EXPECT_EQ(doubleFixed(4) * 5, 20);
+            EXPECT_EQ(doubleFixed(7) * 100, 700);
+        }
+        
+        TEST(FixedPointArithmetic, IntegerInverseMultiplicationTest) {
+            EXPECT_EQ(3 * fixed(3), 9);
+            EXPECT_EQ(3 * fixed(5), 15);
+            EXPECT_EQ(13 * fixed(10), 130);
+        
+            EXPECT_EQ(2 * radian(1), 0);
+            EXPECT_EQ(50 * radian(0), 0);
+            
+            EXPECT_EQ(3 * doubleFixed(0), 0);
+            EXPECT_EQ(5 * doubleFixed(4), 20);
+            EXPECT_EQ(100 * doubleFixed(7), 700);
+        }
+        
+        TEST(FixedPointArithmetic, IntegerDecimalMultiplicationTest) {
+            EXPECT_EQ(fixed("3.125") * 2, fixed("6.25"));
+            EXPECT_EQ(fixed("4.5") * 3, fixed("13.5"));
+            EXPECT_EQ(fixed("10.75") * 4, fixed("43"));
+        
+            EXPECT_EQ(radian("0.5") * 2, radian("1"));
+            EXPECT_EQ(radian("0.25") * 4, radian("1"));
+            EXPECT_EQ(radian("0.125") * 8, radian("1"));
+            
+            EXPECT_EQ(doubleFixed("3.5") * 2, doubleFixed("7"));
+            EXPECT_EQ(doubleFixed("2.25") * 4, doubleFixed("9"));
+            EXPECT_EQ(doubleFixed("1.5") * 10, doubleFixed("15"));
+        }
+        
+        TEST(FixedPointArithmetic, IntegerInverseDecimalMultiplicationTest) {
+            EXPECT_EQ(2 * fixed("3.125"), fixed("6.25"));
+            EXPECT_EQ(3 * fixed("4.5"), fixed("13.5"));
+            EXPECT_EQ(4 * fixed("10.75"), fixed("43"));
+        
+            EXPECT_EQ(2 * radian("0.5"), radian("1"));
+            EXPECT_EQ(4 * radian("0.25"), radian("1"));
+            EXPECT_EQ(8 * radian("0.125"), radian("1"));
+            
+            EXPECT_EQ(2 * doubleFixed("3.5"), doubleFixed("7"));
+            EXPECT_EQ(4 * doubleFixed("2.25"), doubleFixed("9"));
+            EXPECT_EQ(10 * doubleFixed("1.5"), doubleFixed("15"));
+        }
+        
+        // Subtraction Tests
+        TEST(FixedPointArithmetic, IntegerSubtractionTest) {
+            EXPECT_EQ(fixed(3) - 1, 2);
+            EXPECT_EQ(fixed(5) - 3, 2);
+            EXPECT_EQ(fixed(10) - 13, -3);
+        
+            EXPECT_EQ(radian(1) - 2, 1);  // Wraps around at 2 (modular behavior)
+            EXPECT_EQ(radian(0) - 1, 1);  // Wraps around at 2
+            
+            EXPECT_EQ(doubleFixed(3) - 3, 0);
+            EXPECT_EQ(doubleFixed(4) - 5, -1);
+            EXPECT_EQ(doubleFixed(100) - 7, 93);
+        }
+        
+        TEST(FixedPointArithmetic, IntegerInverseSubtractionTest) {
+            EXPECT_EQ(3 - fixed(1), 2);
+            EXPECT_EQ(5 - fixed(3), 2);
+            EXPECT_EQ(10 - fixed(13), -3);
+        
+            EXPECT_EQ(1 - radian(2), 1);  // Wraps around at 2
+            EXPECT_EQ(0 - radian(1), 1);  // Wraps around at 2
+            
+            EXPECT_EQ(3 - doubleFixed(3), 0);
+            EXPECT_EQ(4 - doubleFixed(5), -1);
+            EXPECT_EQ(100 - doubleFixed(7), 93);
+        }
+        
+        TEST(FixedPointArithmetic, IntegerDecimalSubtractionTest) {
+            EXPECT_EQ(fixed("3.125") - 1, fixed("2.125"));
+            EXPECT_EQ(fixed("5.5") - 3, fixed("2.5"));
+            EXPECT_EQ(fixed("10.75") - 13, fixed("-2.25"));
+        
+            EXPECT_EQ(radian("1.5") - 2, radian("1.5"));  // Wraps around at 2
+            EXPECT_EQ(radian("0.25") - 1, radian("1.25"));  // Wraps around at 2
+            
+            EXPECT_EQ(doubleFixed("3.5") - 3, doubleFixed("0.5"));
+            EXPECT_EQ(doubleFixed("4.25") - 5, doubleFixed("-0.75"));
+            EXPECT_EQ(doubleFixed("100.125") - 7, doubleFixed("93.125"));
+        }
+        
+        TEST(FixedPointArithmetic, IntegerInverseDecimalSubtractionTest) {
+            EXPECT_EQ(1 - fixed("3.125"), fixed("-2.125"));
+            EXPECT_EQ(3 - fixed("5.5"), fixed("-2.5"));
+            EXPECT_EQ(13 - fixed("10.75"), fixed("2.25"));
+        
+            EXPECT_EQ(2 - radian("1.5"), radian("0.5"));
+            EXPECT_EQ(1 - radian("0.25"), radian("0.75"));
+            
+            EXPECT_EQ(3 - doubleFixed("3.5"), doubleFixed("-0.5"));
+            EXPECT_EQ(5 - doubleFixed("4.25"), doubleFixed("0.75"));
+            EXPECT_EQ(7 - doubleFixed("100.125"), doubleFixed("-93.125"));
+        }
+        
+        // Division Tests (not including cross because those are far more complex)
+        TEST(FixedPointArithmetic, IntegerDivisionTest) {
+            EXPECT_EQ(fixed(9) / 3, 3);
+            EXPECT_EQ(fixed(15) / 3, 5);
+            EXPECT_EQ(fixed(130) / 13, 10);
+
+            EXPECT_EQ(radian(1) / 2, radian("0.5"));
+            
+            EXPECT_EQ(doubleFixed(0) / 3, 0);
+            EXPECT_EQ(doubleFixed(20) / 5, 4);
+            EXPECT_EQ(doubleFixed(700) / 100, 7);
+        }
+        
+        TEST(FixedPointArithmetic, IntegerDecimalDivisionTest) {
+            EXPECT_EQ(fixed("6.25") / 2, fixed("3.125"));
+            EXPECT_EQ(fixed("13.5") / 3, fixed("4.5"));
+            EXPECT_EQ(fixed("43") / 4, fixed("10.75"));
+        
+            EXPECT_EQ(radian("1") / 2, radian("0.5"));
+            EXPECT_EQ(radian("1") / 4, radian("0.25"));
+            EXPECT_EQ(radian("1") / 8, radian("0.125"));
+            
+            EXPECT_EQ(doubleFixed("7") / 2, doubleFixed("3.5"));
+            EXPECT_EQ(doubleFixed("9") / 4, doubleFixed("2.25"));
+            EXPECT_EQ(doubleFixed("15") / 10, doubleFixed("1.5"));
+        }
+    #pragma endregion
+
+    #pragma region Integer edge cases
+        TEST(FixedPointArithmetic, IntegerAdditionEdgeCaseFixed) {
+            EXPECT_DEATH(fixed("123.13123123") + 1231231232, ".*");
+            EXPECT_DEATH(fixed("321211") - 1231231232, ".*");
+            EXPECT_DEATH(fixed("4") - 1231231232, ".*");
+            EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
+            EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
+        }
+
+        TEST(FixedPointArithmetic, IntegerAdditionEdgeCaseDoubleFixed) {
+        }
+
+        TEST(FixedPointArithmetic, IntegerAdditionRadianOverflow) {
+        }
+
+        TEST(FixedPointArithmetic, IntegerSubtractionEdgeCaseFixed) {
+            
+        }
+
+        TEST(FixedPointArithmetic, IntegerSubtractionEdgeCaseDoubleFixed) {
+            
+        }
+
+        TEST(FixedPointArithmetic, IntegerSubtractionRadianOverflow) {
+            
+        }
+
+        TEST(FixedPointArithmetic, IntegerInverseSubtractionEdgeCaseFixed) {
+            
+        }
+
+        TEST(FixedPointArithmetic, IntegerInverseMultiplicationEdgeCaseDoubleFixed) {
+            
+        }
+
+        TEST(FixedPointArithmetic, IntegerInverseMultiplicationRadianOverflow) {
+            
+        }
+    #pragma endregion
+    #pragma region Fixed point operations
+    #pragma endregion
+
+    // Division for fixed point numbers 
+    #pragma region Complex Division
 #pragma endregion
 
 

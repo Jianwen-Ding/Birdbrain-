@@ -42,6 +42,10 @@ function (test_insert test_name test_exec)
     ${CMAKE_SOURCE_DIR}/tests/include/ecs/components
   )
 
+  if (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
+    target_compile_options(${test_name} PUBLIC -Winteger-overflow)
+  endif()
+
   add_test(${FIN_NAME} ${test_name})
 endfunction()
 

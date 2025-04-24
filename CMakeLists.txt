@@ -33,7 +33,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2 dl)
 
 message(${CMAKE_CXX_COMPILER_ID})
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
-    target_compile_options(${PROJECT_NAME} PUBLIC)
+    target_compile_options(${PROJECT_NAME} PUBLIC -Winteger-overflow)
 endif()
 
 include(CTest)
