@@ -805,6 +805,7 @@ public:
 
             return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt * -1, true);
         }
+
         #pragma region Integer Arithmetic
             template <Int Base2>
             constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+(const Base2 rhs) const {
@@ -814,10 +815,17 @@ public:
 
                 // Potentially the added integer overflows on shift but still can result in a valid number
                 if (std::cmp_greater(rhs, m_maxIntegerPoint)) {
-                    ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (m_maxIntegerPoint << DecimalBits)), rhs << " will overflow when converted to fixed number");
-                    ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint, m_maxIntegerPoint), rhs << " will overflow when converted to fixed number");
-                    ASSERT_LOG(std::cmp_less_equal(m_baseInt + (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() - (Base(rhs - m_maxIntegerPoint) << DecimalBits)), rhs << " will overflow when converted to fixed number");
-                    return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (Base(rhs - m_maxIntegerPoint) << DecimalBits)), true);
+                    if constexpr (m_isSigned) {
+                        ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (m_maxIntegerPoint << DecimalBits)), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_less_equal(m_baseInt + (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() - (1 << DecimalBits)), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_less_equal((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (1 << DecimalBits), std::numeric_limits<Base>::max() - (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)), rhs << " will overflow when converted to fixed number");
+                        return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (Base(rhs - m_maxIntegerPoint) << DecimalBits)), true);
+                    }
+                    else {
+                        ASSERT_LOG(false, rhs << "will cause overflow on addition")
+                        return FixedPoint<Base,DecimalBits,FlowGuard>((m_baseInt + (Base(rhs) << DecimalBits)), true);
+                    }
                 }
                 else if(std::cmp_less(rhs, m_minIntegerPoint)) {
                     // TODO: Make alternate for unsigned integers
@@ -828,7 +836,8 @@ public:
                         return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt + (m_minIntegerPoint << DecimalBits)) + (Base(rhs - m_minIntegerPoint) << DecimalBits)), true);
                     }
                     else {
-                        ASSERT_LOG(std::cmp_greater_equal(m_baseInt >> DecimalBits, rhs), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater(m_baseInt >> DecimalBits, 0), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater_equal((m_baseInt >> DecimalBits) - 1,  -(rhs + 1)), rhs << " will overflow when converted to fixed number");
                         return FixedPoint<Base,DecimalBits,FlowGuard>((((m_baseInt >> DecimalBits) + rhs) << DecimalBits) + (m_baseInt & m_decimalPointMask) , true);
                     }
                 }
@@ -841,7 +850,7 @@ public:
             }
 
             template <Int Base2>
-            friend FixedPoint<Base,DecimalBits,FlowGuard> operator+(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
                 return rhs + lhs;
             }
 
@@ -879,7 +888,7 @@ public:
             }
 
             template <Int Base2>
-            friend FixedPoint<Base,DecimalBits,FlowGuard> operator-(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
                 if constexpr (!FlowGuard) {
                     return FixedPoint<Base,DecimalBits,FlowGuard>((Base(lhs) << DecimalBits) - rhs.m_baseInt, true);
                 }
@@ -955,7 +964,7 @@ public:
             }
 
             template <Int Base2>
-            friend FixedPoint<Base,DecimalBits,FlowGuard> operator*(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator*(const Base2 lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
                 return rhs * lhs;
             }
 
