@@ -4,6 +4,8 @@
 #include "ECSConsts.hpp"
 #include "ComponentPool.hpp"
 
+#include <vector>
+
 /*
  * SCENE DEFINITION + FUNCTIONALITY
  */

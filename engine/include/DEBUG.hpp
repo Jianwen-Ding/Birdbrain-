@@ -29,10 +29,10 @@
         }\
     }
 #else
-    // 
+    // Does absolutely nothing with the code since debugging is off
     #define ASSERT(x) ((void)0)
-    #define ASSERT_LOG(x) ((void)0)
-    #define ((void)0)
+    #define ASSERT_LOG(x, y) ((void)0)
+    #define LOG(x) ((void)0)
 #endif
 
 #endif
