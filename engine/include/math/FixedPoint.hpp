@@ -113,10 +113,11 @@ protected:
             template <Int Base2>
             constexpr void integerInit(Base2 base) {
                 // A negative number cannot be used to construct a unsigned fixed point
-                ASSERT_LOG(m_isSigned || base >= 0, "Negative integer casted into unsigned fixed point");
+                // TODO: Delegate this to only on flow guard, this seems a bit uintuitive. 
+                ASSERT_LOG(m_isSigned || base >= 0, "Negative integer [" << base << "] casted into unsigned fixed point");
                 // Makes sure that base number isn't too large to even be stored by m_baseInt 
-                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, std::numeric_limits<Base>::max() >> DecimalBits), "Integer [" << base << "] higher than integer limit [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
-                ASSERT_LOG(!FlowGuard || !m_isSigned ||  std::cmp_greater_equal(base, std::numeric_limits<Base>::min() >> DecimalBits), "Integer [" << base << "] lower than integer minimum [" << (std::numeric_limits<Base>::max() >> DecimalBits) << "] and thus can't be used to construct fixed point number");
+                ASSERT_LOG(!FlowGuard || std::cmp_less_equal(base, m_maxIntegerPoint), "Integer [" << base << "] higher than integer limit [" << m_maxIntegerPoint << "] and thus can't be used to construct fixed point number");
+                ASSERT_LOG(!FlowGuard || !m_isSigned ||  std::cmp_greater_equal(base, m_minIntegerPoint), "Integer [" << base << "] lower than integer minimum [" << m_minIntegerPoint << "] and thus can't be used to construct fixed point number");
 
                 m_baseInt = base << DecimalBits;
             }
@@ -337,8 +338,16 @@ protected:
                     return decimalPoint;
                 }
             
-                static constexpr uint64 combineFinal(uint64 integerPoint, uint64 decimalPoint) {
+                static constexpr uint64 combineFinal(uint64 integerPoint, uint64 decimalPoint, bool negative) {
                     if constexpr (m_decimalBitsMaxed) {
+                        if constexpr (m_isSigned) {
+                            if(integerPoint == 1) {
+                                ASSERT_LOG(negative, "This being hit is a bug, a overflowing integer point like this should have been caught earlier in the string constructor");
+                                ASSERT_LOG(decimalPoint == 0, "This being hit is a bug, a underflowing decimal point like this should have been caught earlier in the string constructor");
+                                ASSERT_LOG(DecimalBits != 64, "This means that this is somehow hitting an signed number with 64 decimal bits, should not happen");
+                                return uint64(1) << DecimalBits;
+                            }
+                        }
                         return decimalPoint;
                     }
                     else {
@@ -405,58 +414,58 @@ protected:
             // Reduces code duplication of toString.
             // Stop overflow checks to see if integer point is at limit and thus decimal point should not ever round up to 1.
             inline std::string unsignedToString(processInt num, bool stopOverflow) const {      
-            // Adds integer point    
-            std::string retString; 
-            if constexpr (m_decimalBitsMaxed) {
-                retString = "0";
-            }
-            else {
-                retString = std::to_string(num >> DecimalBits);    
-            }
-            // Adds for decimal point and marker
-            static constexpr uint8 repDecimalBits = floorRepDecBit<m_maxDecBitPrecision>();
-            constexpr int16 decDiff = DecimalBits - m_maxDecBitPrecision;
+                // Adds integer point    
+                std::string retString; 
+                if constexpr (m_decimalBitsMaxed) {
+                    retString = "0";
+                }
+                else {
+                    retString = std::to_string(num >> DecimalBits);    
+                }
+                // Adds for decimal point and marker
+                static constexpr uint8 repDecimalBits = floorRepDecBit<m_maxDecBitPrecision>();
+                constexpr int16 decDiff = DecimalBits - m_maxDecBitPrecision;
 
-            processInt repDecimalNum;
-            if constexpr (decDiff > 0) {
-                repDecimalNum = (num & m_decimalPointMask) >> (decDiff - 1);
-                // Rounding logic
-                if (repDecimalNum & 1) {
-                    repDecimalNum >>= 1;
-                    // Prevents rounding up if it would cause overflow
-                    if(!stopOverflow || repDecimalNum < (uint64(1) << repDecimalBits) - 1) {
-                        repDecimalNum += 1;
+                processInt repDecimalNum;
+                if constexpr (decDiff > 0) {
+                    repDecimalNum = (num & m_decimalPointMask) >> (decDiff - 1);
+                    // Rounding logic
+                    if (repDecimalNum & 1) {
+                        repDecimalNum >>= 1;
+                        // Prevents rounding up if it would cause overflow
+                        if(!stopOverflow || repDecimalNum < (uint64(1) << repDecimalBits) - 1) {
+                            repDecimalNum += 1;
+                        }
+                    }
+                    else {
+                        repDecimalNum >>= 1;
                     }
                 }
                 else {
-                    repDecimalNum >>= 1;
+                    repDecimalNum = (num & m_decimalPointMask);
                 }
-            }
-            else {
-                repDecimalNum = (num & m_decimalPointMask);
-            }
 
-            uint64 decimalNum = repDecimalNum * DetMathInt::pow(int64(5), repDecimalBits);
-            if(decimalNum != 0) {
-                uint64 cutNum;
-                bool foundCut = false;
-                uint8 fullDecLength = 0;
-                while(decimalNum > 0) {
-                    if(!foundCut && decimalNum % 10 != 0) {
-                        cutNum = decimalNum;
-                        foundCut = true;
+                uint64 decimalNum = repDecimalNum * DetMathInt::pow(int64(5), repDecimalBits);
+                if(decimalNum != 0) {
+                    uint64 cutNum;
+                    bool foundCut = false;
+                    uint8 fullDecLength = 0;
+                    while(decimalNum > 0) {
+                        if(!foundCut && decimalNum % 10 != 0) {
+                            cutNum = decimalNum;
+                            foundCut = true;
+                        }
+                        decimalNum /= 10;
+                        fullDecLength++;
                     }
-                    decimalNum /= 10;
-                    fullDecLength++;
-                }
-                ASSERT_LOG(foundCut, "Despite decimalNum not being zero, a non 0 decimal could not be found");
+                    ASSERT_LOG(foundCut, "Despite decimalNum not being zero, a non 0 decimal could not be found");
 
-                retString += '.';
-                retString.resize(retString.size() + repDecimalBits - fullDecLength, '0');
-                retString.append(std::to_string(cutNum));
+                    retString += '.';
+                    retString.resize(retString.size() + repDecimalBits - fullDecLength, '0');
+                    retString.append(std::to_string(cutNum));
+                }
+                return retString;
             }
-            return retString;
-        }
         #pragma endregion
 
         // Allows for code deduplication between integer comparison and fixed point comparison
@@ -682,7 +691,7 @@ public:
             uint64 decimalPoint = processDecimalPoint(decimalPointStore, decimalPointSize, negative, atLimit);
 
             // Combines Integer point and decimal point
-            uint64 final = combineFinal(integerPoint, decimalPoint);
+            uint64 final = combineFinal(integerPoint, decimalPoint, negative);
 
             // Adjusts final number based on whether the number was negative or not
             if constexpr (m_isSigned) {
@@ -817,42 +826,44 @@ public:
                 if (std::cmp_greater(rhs, m_maxIntegerPoint)) {
                     if constexpr (m_isSigned) {
                         if constexpr (m_decimalBitsMaxed) {
-                            ASSERT_LOG(std::cmp_less_equal(m_baseInt, -1), rhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(rhs, 1), rhs << " will overflow when converted to fixed number");
+                            ASSERT_LOG(std::cmp_less_equal(m_baseInt, -1),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(rhs, 1),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
 
                             return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt) + (1 << (DecimalBits - 1)) + (1 << (DecimalBits - 1))), true);
                         }
                         else {
-                            ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (m_maxIntegerPoint << DecimalBits)), rhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(m_baseInt + (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() - (1 << DecimalBits)), rhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), rhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (1 << DecimalBits)), std::numeric_limits<Base>::max() - (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)), rhs << " will overflow when converted to fixed number");
+                            ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (m_maxIntegerPoint << DecimalBits)),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(m_baseInt + (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() - (1 << DecimalBits)),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint - 1, m_maxIntegerPoint),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (1 << DecimalBits)), std::numeric_limits<Base>::max() - (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)),  "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
 
                             return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt + (m_maxIntegerPoint << DecimalBits)) + (1 << DecimalBits)) + (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits), true);
                         }
                     }
                     else {
-                        ASSERT_LOG(false, rhs << "will cause overflow on addition");
+                        ASSERT_LOG(false, "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>((m_baseInt + (Base(rhs) << DecimalBits)), true);
                     }
                 }
                 else if(std::cmp_less(rhs, m_minIntegerPoint)) {
                     if constexpr (m_isSigned) {
-                        ASSERT_LOG(std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() - (m_minIntegerPoint << DecimalBits)), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal(rhs - m_minIntegerPoint, m_minIntegerPoint), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal(m_baseInt + (m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() - (Base(rhs - m_minIntegerPoint) << DecimalBits)), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() - (m_minIntegerPoint << DecimalBits)), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                        ASSERT_LOG(std::cmp_greater_equal(rhs - m_minIntegerPoint, m_minIntegerPoint), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                        ASSERT_LOG(std::cmp_greater_equal(m_baseInt + (m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() - (Base(rhs - m_minIntegerPoint) << DecimalBits)), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+  
                         return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt + (m_minIntegerPoint << DecimalBits)) + (Base(rhs - m_minIntegerPoint) << DecimalBits)), true);
                     }
                     else {
-                        ASSERT_LOG(std::cmp_greater(m_baseInt >> DecimalBits, 0), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal((m_baseInt >> DecimalBits) - 1,  -(rhs + 1)), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater(m_baseInt >> DecimalBits, 0), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                        ASSERT_LOG(std::cmp_greater_equal((m_baseInt >> DecimalBits) - 1,  -(rhs + 1)), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+
                         return FixedPoint<Base,DecimalBits,FlowGuard>((((m_baseInt >> DecimalBits) + rhs) << DecimalBits) + (m_baseInt & m_decimalPointMask) , true);
                     }
                 }
                 else {
-                    ASSERT_LOG(!(std::cmp_greater(rhs, 0) && std::cmp_greater(m_baseInt, 0)) || std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (Base(rhs) << DecimalBits)), "Adding " << rhs << " will cause overflowed fixed number");
-                    ASSERT_LOG(!(std::cmp_less(rhs, 0) && std::cmp_less(m_baseInt, 0)) || std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() - (Base(rhs) << DecimalBits)), "Adding " << rhs << " will cause underflowed fixed number");
+                    ASSERT_LOG(!(std::cmp_greater(rhs, 0) && std::cmp_greater(m_baseInt, 0)) || std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() - (Base(rhs) << DecimalBits)), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                    ASSERT_LOG(!(std::cmp_less(rhs, 0) && std::cmp_less(m_baseInt, 0)) || std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() - (Base(rhs) << DecimalBits)), "The operation [" << toString().c_str() << " + " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                     return FixedPoint<Base,DecimalBits,FlowGuard>((m_baseInt + (Base(rhs) << DecimalBits)), true);
                 }
@@ -872,44 +883,44 @@ public:
                 if (std::cmp_greater(rhs, m_maxIntegerPoint)) {
                     if constexpr (m_isSigned) {
                         if constexpr (m_decimalBitsMaxed) {
-                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt, 0), rhs << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_equal(rhs, 1), rhs << " will overflow when converted to fixed number");
+                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt, 0), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                            ASSERT_LOG(std::cmp_equal(rhs, 1), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                             return FixedPoint<Base,DecimalBits,FlowGuard>((((m_baseInt - (Base(1) << (DecimalBits - 1))) - (Base(1) << (DecimalBits - 1)))), true);
                         }
                         else {
-                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() + (m_maxIntegerPoint << DecimalBits)), rhs << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt - (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() + (Base(1) << DecimalBits)), rhs << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), rhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_greater_equal(((m_baseInt - (m_maxIntegerPoint << DecimalBits)) - (Base(1) << DecimalBits)), std::numeric_limits<Base>::min() + (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)), rhs << " will underflow when converted to fixed number");
+                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() + (m_maxIntegerPoint << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                            ASSERT_LOG(std::cmp_greater_equal(m_baseInt - (m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() + (Base(1) << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(rhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
+                            ASSERT_LOG(std::cmp_greater_equal(((m_baseInt - (m_maxIntegerPoint << DecimalBits)) - (Base(1) << DecimalBits)), std::numeric_limits<Base>::min() + (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                             return FixedPoint<Base,DecimalBits,FlowGuard>((((m_baseInt - (m_maxIntegerPoint << DecimalBits)) - (Base(1) << DecimalBits)) - (Base(rhs - m_maxIntegerPoint - 1) << DecimalBits)), true);
                         }
                     }
                     else {
-                        ASSERT_LOG(false, rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(false, "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt - (Base(rhs) << DecimalBits), true);
                     }
                 }
                 else if(std::cmp_less(rhs, m_minIntegerPoint)) {
                     if constexpr (m_isSigned) {
-                        ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() + (m_minIntegerPoint << DecimalBits)), rhs << " will underflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal(rhs - m_minIntegerPoint, m_minIntegerPoint), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_less_equal(m_baseInt - (m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() + (Base(rhs - m_minIntegerPoint) << DecimalBits)), rhs << " will underflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() + (m_minIntegerPoint << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                        ASSERT_LOG(std::cmp_greater_equal(rhs - m_minIntegerPoint, m_minIntegerPoint), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                        ASSERT_LOG(std::cmp_less_equal(m_baseInt - (m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() + (Base(rhs - m_minIntegerPoint) << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>(((m_baseInt - (m_minIntegerPoint << DecimalBits)) - (Base(rhs - m_minIntegerPoint) << DecimalBits)), true);
                     }
                     else {
-                        ASSERT_LOG(std::cmp_greater_equal(m_maxIntegerPoint - 1, -(rhs + 1)), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_less_equal(m_baseInt >> DecimalBits, m_maxIntegerPoint + rhs), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater_equal(m_maxIntegerPoint - 1, -(rhs + 1)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                        ASSERT_LOG(std::cmp_less_equal(m_baseInt >> DecimalBits, m_maxIntegerPoint + rhs), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>((((m_baseInt >> DecimalBits) - rhs) << DecimalBits) + (m_baseInt & m_decimalPointMask) , true);
                     }
                 }
                 else {
-                    ASSERT_LOG(!std::cmp_less_equal(rhs, 0) || std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() + (Base(rhs) << DecimalBits)), "Subtracting " << rhs << " will cause overflowed fixed number");
-                    ASSERT_LOG(!std::cmp_greater_equal(rhs, 0) || std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() + (Base(rhs) << DecimalBits)), "Subtracting " << rhs << " will cause underflowed fixed number");
+                    ASSERT_LOG(!std::cmp_less_equal(rhs, 0) || std::cmp_less_equal(m_baseInt, std::numeric_limits<Base>::max() + (Base(rhs) << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << getMaxValue() << "]");
+                    ASSERT_LOG(!std::cmp_greater_equal(rhs, 0) || std::cmp_greater_equal(m_baseInt, std::numeric_limits<Base>::min() + (Base(rhs) << DecimalBits)), "The operation [" << toString().c_str() << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                     return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt - (Base(rhs) << DecimalBits), true);
                 }
@@ -923,24 +934,24 @@ public:
 
                 if (std::cmp_greater(lhs, m_maxIntegerPoint)) {
                     if constexpr (m_decimalBitsMaxed) {
-                        ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 1), rhs.m_baseInt << " will underflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_equal(lhs, 1), lhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 1), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                        ASSERT_LOG(std::cmp_equal(lhs, 1), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>((std::numeric_limits<Base>::max() - rhs.m_baseInt) + 1, true);
                     }
                     else {
                         if constexpr (m_isSigned) { 
-                            ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 0), rhs.m_baseInt << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_greater_equal((m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() + rhs.m_baseInt), rhs.m_baseInt << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal((m_maxIntegerPoint << DecimalBits) - rhs.m_baseInt, std::numeric_limits<Base>::max() - (1 << DecimalBits)), rhs.m_baseInt << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(lhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), lhs << " will overflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_less_equal(((m_maxIntegerPoint << DecimalBits) - rhs.m_baseInt) + (1 << DecimalBits) , std::numeric_limits<Base>::max() - (Base(lhs - m_maxIntegerPoint - 1) << DecimalBits)), rhs.m_baseInt << " will underflow when converted to fixed number");
+                            ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 0), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_greater_equal((m_maxIntegerPoint << DecimalBits), std::numeric_limits<Base>::min() + rhs.m_baseInt), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal((m_maxIntegerPoint << DecimalBits) - rhs.m_baseInt, std::numeric_limits<Base>::max() - (1 << DecimalBits)), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(lhs - m_maxIntegerPoint - 1, m_maxIntegerPoint), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_less_equal(((m_maxIntegerPoint << DecimalBits) - rhs.m_baseInt) + (1 << DecimalBits) , std::numeric_limits<Base>::max() - (Base(lhs - m_maxIntegerPoint - 1) << DecimalBits)), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
                         
                             return FixedPoint<Base,DecimalBits,FlowGuard>((((m_maxIntegerPoint << DecimalBits) - rhs.m_baseInt) + (1 << DecimalBits)) + (Base(lhs - m_maxIntegerPoint - 1) << DecimalBits), true);
                         }
                         else {
-                            ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 0), rhs.m_baseInt << " will underflow when converted to fixed number");
-                            ASSERT_LOG(std::cmp_greater_equal(lhs - (rhs.m_baseInt >> DecimalBits), m_maxIntegerPoint), rhs << " will overflow when converted to fixed number");    
+                            ASSERT_LOG(std::cmp_greater_equal(rhs.m_baseInt, 0), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                            ASSERT_LOG(std::cmp_greater_equal(lhs - (rhs.m_baseInt >> DecimalBits), m_maxIntegerPoint), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");    
 
                             return FixedPoint<Base,DecimalBits,FlowGuard>(((lhs - (rhs.m_baseInt >> DecimalBits)) << DecimalBits) + (rhs.m_baseInt & m_decimalPointMask) , true);
                         }
@@ -948,26 +959,22 @@ public:
                 }
                 else if(std::cmp_less(lhs, m_minIntegerPoint)) {
                     if constexpr (m_isSigned) {
-                        ASSERT_LOG(std::cmp_less_equal(rhs.m_baseInt, 0), rhs.m_baseInt << " will underflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_less_equal((m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() + rhs.m_baseInt), rhs.m_baseInt << " will underflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_less_equal(rhs.m_baseInt, 0), "The operation [" << lhs << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << rhs.getMinValue() << "]");
+                        ASSERT_LOG(std::cmp_less_equal((m_minIntegerPoint << DecimalBits), std::numeric_limits<Base>::max() + rhs.m_baseInt), "The operation [" << lhs << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << rhs.getMinValue() << "]");
                         ASSERT_LOG(std::cmp_greater_equal(lhs - m_minIntegerPoint, m_minIntegerPoint), rhs << " will overflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal((m_minIntegerPoint << DecimalBits) - rhs.m_baseInt, std::numeric_limits<Base>::min() - (Base(lhs - m_minIntegerPoint) << DecimalBits)), rhs.m_baseInt << " will underflow when converted to fixed number");
+                        ASSERT_LOG(std::cmp_greater_equal((m_minIntegerPoint << DecimalBits) - rhs.m_baseInt, std::numeric_limits<Base>::min() - (Base(lhs - m_minIntegerPoint) << DecimalBits)), "The operation [" << lhs << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << rhs.getMinValue() << "]");
+
                         return FixedPoint<Base,DecimalBits,FlowGuard>((((m_minIntegerPoint << DecimalBits) - rhs.m_baseInt) + (Base(lhs - m_minIntegerPoint) << DecimalBits)), true);
                     }
                     else {
-                        LOG("lhs" << lhs);
-                        LOG("(rhs.m_baseInt >> DecimalBits):" << (rhs.m_baseInt >> DecimalBits));
-                        LOG("((lhs - (rhs.m_baseInt >> DecimalBits)) << DecimalBits):" << ((lhs - (rhs.m_baseInt >> DecimalBits)) << DecimalBits));
-                        LOG("(m_minIntegerPoint):" << m_minIntegerPoint);
-                        ASSERT_LOG(std::cmp_less_equal(rhs.m_baseInt, 0), rhs.m_baseInt << " will underflow when converted to fixed number");
-                        ASSERT_LOG(std::cmp_greater_equal(lhs - (rhs.m_baseInt >> DecimalBits), m_minIntegerPoint), rhs << " will overflow when converted to fixed number");
+                        ASSERT_LOG(false, "The operation [" << lhs << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << rhs.getMinValue() << "]");
 
                         return FixedPoint<Base,DecimalBits,FlowGuard>(((lhs - (rhs.m_baseInt >> DecimalBits)) << DecimalBits) + (rhs.m_baseInt & m_decimalPointMask) , true);
                     }
                 }
                 else {
-                    ASSERT_LOG(!std::cmp_less(rhs.m_baseInt, 0) || std::cmp_less_equal((Base(lhs) << DecimalBits), std::numeric_limits<Base>::max() + rhs.m_baseInt), "Subtracting " << rhs << " will cause overflowed fixed number");
-                    ASSERT_LOG(!std::cmp_greater(rhs.m_baseInt, 0) || std::cmp_greater_equal((Base(lhs) << DecimalBits), std::numeric_limits<Base>::min() + rhs.m_baseInt), "Subtracting " << rhs << " will cause underflowed fixed number");
+                    ASSERT_LOG(!std::cmp_less(rhs.m_baseInt, 0) || std::cmp_less_equal((Base(lhs) << DecimalBits), std::numeric_limits<Base>::max() + rhs.m_baseInt), "The operation [" << lhs << " - " << rhs << "] would cause an overflow as it would produce a value over the max [" << rhs.getMaxValue() << "]");
+                    ASSERT_LOG(!std::cmp_greater(rhs.m_baseInt, 0) || std::cmp_greater_equal((Base(lhs) << DecimalBits), std::numeric_limits<Base>::min() + rhs.m_baseInt), "The operation [" << lhs << " - " << rhs << "] would cause an underflow as it would produce a value under the min [" << getMinValue() << "]");
 
                     return FixedPoint<Base,DecimalBits,FlowGuard>((Base(lhs) << DecimalBits) - rhs.m_baseInt, true);
                 }
@@ -1113,9 +1120,9 @@ public:
             // Makes sure a negative number is not casted into an unsigned number
             ASSERT_LOG(std::is_signed_v<Base2> || m_baseInt >= 0, "Negative fixed point number ["  << toString().c_str() << "] casted as a unsigned integer");
             // Makes sure number isn't too large to be casted into specified int, flow guard does not apply since int is being casted into
-            ASSERT_LOG(std::cmp_less_equal(m_baseInt >> DecimalBits, std::numeric_limits<Base2>::max()), "Fixed point number [" << toString().c_str() << "] too high to be casted into smaller fixed point number");
+            ASSERT_LOG(std::cmp_less_equal(m_baseInt >> DecimalBits, std::numeric_limits<Base2>::max()), "Fixed point number [" << toString().c_str() << "] too high to be casted into specified integer as it is above max [" << std::numeric_limits<Base2>::max() << "]");
             if(m_isSigned) {
-                ASSERT_LOG(std::cmp_greater_equal(m_baseInt / m_divisor, std::numeric_limits<Base2>::min()), "Fixed point number [" << toString().c_str() << "] too low to be casted into smaller fixed point number");
+                ASSERT_LOG(std::cmp_greater_equal(m_baseInt / m_divisor, std::numeric_limits<Base2>::min()), "Fixed point number [" << toString().c_str() << "] too low to be casted into specified integer as it is below min [" << std::numeric_limits<Base2>::min() << "]");
             }
 
             if constexpr (m_isSigned) {

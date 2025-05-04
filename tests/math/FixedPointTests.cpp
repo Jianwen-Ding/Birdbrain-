@@ -376,13 +376,15 @@
             EXPECT_EQ((doubleFixed("-22")).getData(), -(int64(22) << 11));
             EXPECT_EQ((doubleFixed("-2342232")).getData(), -(int64(2342232) << 11));
             EXPECT_EQ((doubleFixed("-8388607")).getData(), -(int64(8388607)<< 11));
-            EXPECT_EQ((doubleFixed("-8388607")).getData(), -(int64(8388607)<< 11));
+            EXPECT_EQ((doubleFixed("-8388608")).getData(), -(int64(8388608)<< 11));
             EXPECT_EQ((doubleFixed("-934934993")).getData(), -(int64(934934993u)<< 11));
             EXPECT_EQ((doubleFixed("-13976329829")).getData(), -(int64(13976329829u)<< 11));
             EXPECT_EQ((doubleFixed("-23233248923982")).getData(), -(int64(23233248923982u)<< 11));
             EXPECT_EQ((doubleFixed("-4503599627370495")).getData(), -(int64(4503599627370495u)<< 11));
             EXPECT_EQ((FixedPoint<int32, 5, true>("-53392309")).getData(), -(int64(53392309u) << 5));
             EXPECT_EQ((FixedPoint<int8, 3, true>("-5")).getData(), -(int64(5u) << 3));
+            EXPECT_EQ((FixedPoint<int8, 7, true>("-1")).getData(), -(1 << 7));
+            EXPECT_EQ((FixedPoint<int64, 63, true>("-1")).getData(), -(int64((uint64(1) << 63) - 1)) - 1);
             EXPECT_EQ((FixedPoint<int64, 0, true>("-9223372036854775807")).getData(), -int64(9223372036854775807u));
             EXPECT_EQ((FixedPoint<int64, 0, true>("-9223372036854775808")).getData(), std::numeric_limits<int64>::min());
         }
@@ -1368,8 +1370,8 @@
 #pragma endregion
 
 // Tests if simple operations between fixed point numbers work
-#pragma region Math Operations
-    #pragma region Integer operations
+#pragma region Arithmetic Operations
+    #pragma region Integer Operation
         TEST(FixedPointArithmetic, IntegerAdditionTest) {
             EXPECT_EQ(fixed(3) + 3, 6);
             EXPECT_EQ(fixed(5) + 3, 8);
@@ -1431,6 +1433,19 @@
             EXPECT_EQ(doubleFixed("4.06396484375") + 123, doubleFixed("127.06396484375"));
             EXPECT_EQ(doubleFixed("167.5947265625") + 5, doubleFixed("172.5947265625"));
             EXPECT_EQ(doubleFixed("36.822265625") + 100, doubleFixed("136.822265625"));
+
+            EXPECT_EQ(fixed("3.125") + uint32(3), fixed("6.125"));
+            EXPECT_EQ(fixed("465.06640625") + int32(7), fixed("472.06640625"));
+            EXPECT_EQ(fixed("455443.98828125") + uint32(200), fixed("455643.98828125"));
+
+            EXPECT_EQ(radian("1.162109375") + uint8(3), radian("0.162109375"));
+            EXPECT_EQ(radian("1.162109375") + int64(1), radian("0.162109375"));
+            EXPECT_EQ(radian("0.254058837890625") + uint8(0), radian("0.254058837890625"));
+            EXPECT_EQ(radian("0.254058837890625") + int64(1), radian("1.254058837890625"));
+            
+            EXPECT_EQ(doubleFixed("4.06396484375") + int32(123), doubleFixed("127.06396484375"));
+            EXPECT_EQ(doubleFixed("167.5947265625") + int64(5), doubleFixed("172.5947265625"));
+            EXPECT_EQ(doubleFixed("36.822265625") + uint16(100), doubleFixed("136.822265625"));
         }
 
         TEST(FixedPointArithmetic, IntegerInverseDecimalAdditionTest) {
@@ -1446,6 +1461,19 @@
             EXPECT_EQ(123 + doubleFixed("4.06396484375"), doubleFixed("127.06396484375"));
             EXPECT_EQ(5 + doubleFixed("167.5947265625"), doubleFixed("172.5947265625"));
             EXPECT_EQ(100 + doubleFixed("36.822265625"), doubleFixed("136.822265625"));
+
+            EXPECT_EQ(uint32(3) + fixed("3.125"), fixed("6.125"));
+            EXPECT_EQ(int64(7) + fixed("465.06640625"), fixed("472.06640625"));
+            EXPECT_EQ(uint32(200) + fixed("455443.98828125"), fixed("455643.98828125"));
+
+            EXPECT_EQ(int32(3) + radian("1.162109375"), radian("0.162109375"));
+            EXPECT_EQ(int8(1) + radian("1.162109375"), radian("0.162109375"));
+            EXPECT_EQ(int32(0) + radian("0.254058837890625"), radian("0.254058837890625"));
+            EXPECT_EQ(int8(1) + radian("0.254058837890625"), radian("1.254058837890625"));
+            
+            EXPECT_EQ(int64(123) + doubleFixed("4.06396484375"), doubleFixed("127.06396484375"));
+            EXPECT_EQ(uint8(5) + doubleFixed("167.5947265625"), doubleFixed("172.5947265625"));
+            EXPECT_EQ(int64(100) + doubleFixed("36.822265625"), doubleFixed("136.822265625"));
         }
 
         TEST(FixedPointArithmetic, IntegerMultiplicationTest) {
@@ -1459,6 +1487,39 @@
             EXPECT_EQ(doubleFixed(0) * 3, 0);
             EXPECT_EQ(doubleFixed(4) * 5, 20);
             EXPECT_EQ(doubleFixed(7) * 100, 700);
+
+            EXPECT_EQ(fixed(3) * 3, 9);
+            EXPECT_EQ(fixed(5) * 3, 15);
+            EXPECT_EQ(fixed(10) * 13, 130);
+        
+            EXPECT_EQ(radian(1) * 2, 0);
+            EXPECT_EQ(radian(0) * 50, 0);
+            
+            EXPECT_EQ(doubleFixed(0) * 3, 0);
+            EXPECT_EQ(doubleFixed(4) * 5, 20);
+            EXPECT_EQ(doubleFixed(7) * 100, 700);
+
+            EXPECT_EQ(fixed(3) * uint32(3), 9);
+            EXPECT_EQ(fixed(5) * int32(3), 15);
+            EXPECT_EQ(fixed(10) * int64(13), 130);
+        
+            EXPECT_EQ(radian(1) * uint32(2), 0);
+            EXPECT_EQ(radian(0) * int64(50), 0);
+            
+            EXPECT_EQ(doubleFixed(0) * int32(3), 0);
+            EXPECT_EQ(doubleFixed(4) * int8(5), 20);
+            EXPECT_EQ(doubleFixed(7) * uint64(100), 700);
+
+            EXPECT_EQ(fixed(3) * uint8(3), 9);
+            EXPECT_EQ(fixed(5) * uint64(3), 15);
+            EXPECT_EQ(fixed(10) * uint8(13), 130);
+        
+            EXPECT_EQ(radian(1) * uint8(2), 0);
+            EXPECT_EQ(radian(0) * int16(50), 0);
+            
+            EXPECT_EQ(doubleFixed(0) * int8(3), 0);
+            EXPECT_EQ(doubleFixed(4) * uint64(5), 20);
+            EXPECT_EQ(doubleFixed(7) * int32(100), 700);
         }
         
         TEST(FixedPointArithmetic, IntegerInverseMultiplicationTest) {
@@ -1472,6 +1533,17 @@
             EXPECT_EQ(3 * doubleFixed(0), 0);
             EXPECT_EQ(5 * doubleFixed(4), 20);
             EXPECT_EQ(100 * doubleFixed(7), 700);
+
+            EXPECT_EQ(uint64(3) * fixed(3), 9);
+            EXPECT_EQ(int32(3) * fixed(5), 15);
+            EXPECT_EQ(uint8(13) * fixed(10), 130);
+        
+            EXPECT_EQ(int64(2) * radian(1), 0);
+            EXPECT_EQ(int32(50) * radian(0), 0);
+            
+            EXPECT_EQ(uint32(3) * doubleFixed(0), 0);
+            EXPECT_EQ(int32(5) * doubleFixed(4), 20);
+            EXPECT_EQ(int64(100) * doubleFixed(7), 700);
         }
         
         TEST(FixedPointArithmetic, IntegerDecimalMultiplicationTest) {
@@ -1486,6 +1558,18 @@
             EXPECT_EQ(doubleFixed("3.5") * 2, doubleFixed("7"));
             EXPECT_EQ(doubleFixed("2.25") * 4, doubleFixed("9"));
             EXPECT_EQ(doubleFixed("1.5") * 10, doubleFixed("15"));
+
+            EXPECT_EQ(fixed("3.125") * uint8(2), fixed("6.25"));
+            EXPECT_EQ(fixed("4.5") * uint64(3), fixed("13.5"));
+            EXPECT_EQ(fixed("10.75") * uint(4), fixed("43"));
+        
+            EXPECT_EQ(radian("0.5") * int8(2), radian("1"));
+            EXPECT_EQ(radian("0.25") * int64(4), radian("1"));
+            EXPECT_EQ(radian("0.125") * int32(8), radian("1"));
+            
+            EXPECT_EQ(doubleFixed("3.5") * int32(2), doubleFixed("7"));
+            EXPECT_EQ(doubleFixed("2.25") * int16(4), doubleFixed("9"));
+            EXPECT_EQ(doubleFixed("1.5") * int64(10), doubleFixed("15"));
         }
         
         TEST(FixedPointArithmetic, IntegerInverseDecimalMultiplicationTest) {
@@ -1500,6 +1584,18 @@
             EXPECT_EQ(2 * doubleFixed("3.5"), doubleFixed("7"));
             EXPECT_EQ(4 * doubleFixed("2.25"), doubleFixed("9"));
             EXPECT_EQ(10 * doubleFixed("1.5"), doubleFixed("15"));
+
+            EXPECT_EQ(uint32(2) * fixed("3.125"), fixed("6.25"));
+            EXPECT_EQ(uint64(3) * fixed("4.5"), fixed("13.5"));
+            EXPECT_EQ(int64(4) * fixed("10.75"), fixed("43"));
+        
+            EXPECT_EQ(uint32(2) * radian("0.5"), radian("1"));
+            EXPECT_EQ(uint8(4) * radian("0.25"), radian("1"));
+            EXPECT_EQ(int64(8) * radian("0.125"), radian("1"));
+            
+            EXPECT_EQ(uint32(2) * doubleFixed("3.5"), doubleFixed("7"));
+            EXPECT_EQ(int64(4) * doubleFixed("2.25"), doubleFixed("9"));
+            EXPECT_EQ(uint32(10) * doubleFixed("1.5"), doubleFixed("15"));
         }
         
         // Subtraction Tests
@@ -1514,6 +1610,17 @@
             EXPECT_EQ(doubleFixed(3) - 3, 0);
             EXPECT_EQ(doubleFixed(4) - 5, -1);
             EXPECT_EQ(doubleFixed(100) - 7, 93);
+
+            EXPECT_EQ(fixed(3) - uint32(1), 2);
+            EXPECT_EQ(fixed(5) - int64(3), 2);
+            EXPECT_EQ(fixed(10) - int8(13), -3);
+        
+            EXPECT_EQ(radian(1) - uint16(2), 1);
+            EXPECT_EQ(radian(0) - int8(1), 1);
+            
+            EXPECT_EQ(doubleFixed(3) - uint64(3), 0);
+            EXPECT_EQ(doubleFixed(4) - int32(5), -1);
+            EXPECT_EQ(doubleFixed(100) - uint8(7), 93);
         }
         
         TEST(FixedPointArithmetic, IntegerInverseSubtractionTest) {
@@ -1527,6 +1634,17 @@
             EXPECT_EQ(3 - doubleFixed(3), 0);
             EXPECT_EQ(4 - doubleFixed(5), -1);
             EXPECT_EQ(100 - doubleFixed(7), 93);
+
+            EXPECT_EQ(uint8(3) - fixed(1), 2);
+            EXPECT_EQ(int64(5) - fixed(3), 2);
+            EXPECT_EQ(uint8(10) - fixed(13), -3);
+        
+            EXPECT_EQ(uint64(1) - radian(2), 1);
+            EXPECT_EQ(uint8(0) - radian(1), 1);
+            
+            EXPECT_EQ(int8(3) - doubleFixed(3), 0);
+            EXPECT_EQ(uint64(4) - doubleFixed(5), -1);
+            EXPECT_EQ(int32(100) - doubleFixed(7), 93);
         }
         
         TEST(FixedPointArithmetic, IntegerDecimalSubtractionTest) {
@@ -1555,10 +1673,10 @@
             EXPECT_EQ(7 - doubleFixed("100.125"), doubleFixed("-93.125"));
 
             EXPECT_EQ(uint32(1) - fixed("3.125"), fixed("-2.125"));
-            EXPECT_EQ(3 - fixed("5.5"), fixed("-2.5"));
+            EXPECT_EQ(uint64(3) - fixed("5.5"), fixed("-2.5"));
             EXPECT_EQ(uint16(13) - fixed("10.75"), fixed("2.25"));
         
-            EXPECT_EQ(2 - radian("1.5"), radian("0.5"));
+            EXPECT_EQ(uint(2) - radian("1.5"), radian("0.5"));
             EXPECT_EQ(uint8(1) - radian("0.25"), radian("0.75"));
             
             EXPECT_EQ(uint32(3) - doubleFixed("3.5"), doubleFixed("-0.5"));
@@ -1577,6 +1695,16 @@
             EXPECT_EQ(doubleFixed(0) / 3, 0);
             EXPECT_EQ(doubleFixed(20) / 5, 4);
             EXPECT_EQ(doubleFixed(700) / 100, 7);
+
+            EXPECT_EQ(fixed(9) / 3, uint8(3));
+            EXPECT_EQ(fixed(15) / 3, int64(5));
+            EXPECT_EQ(fixed(130) / 13, uint32(10));
+
+            EXPECT_EQ(radian(1) / uint32(2), radian("0.5"));
+            
+            EXPECT_EQ(doubleFixed(0) / uint64(3), 0);
+            EXPECT_EQ(doubleFixed(20) / uint32(5), 4);
+            EXPECT_EQ(doubleFixed(700) / uint32(100), 7);
         }
         
         TEST(FixedPointArithmetic, IntegerDecimalDivisionTest) {
@@ -1591,300 +1719,313 @@
             EXPECT_EQ(doubleFixed("7") / 2, doubleFixed("3.5"));
             EXPECT_EQ(doubleFixed("9") / 4, doubleFixed("2.25"));
             EXPECT_EQ(doubleFixed("15") / 10, doubleFixed("1.5"));
+
+            EXPECT_EQ(fixed("6.25") / uint32(2), fixed("3.125"));
+            EXPECT_EQ(fixed("13.5") / int8(3), fixed("4.5"));
+            EXPECT_EQ(fixed("43") / int64(4), fixed("10.75"));
+        
+            EXPECT_EQ(radian("1") / int32(2), radian("0.5"));
+            EXPECT_EQ(radian("1") / int64(4), radian("0.25"));
+            EXPECT_EQ(radian("1") / int32(8), radian("0.125"));
+            
+            EXPECT_EQ(doubleFixed("7") / uint32(2), doubleFixed("3.5"));
+            EXPECT_EQ(doubleFixed("9") / int32(4), doubleFixed("2.25"));
+            EXPECT_EQ(doubleFixed("15") / int64(10), doubleFixed("1.5"));
         }
     #pragma endregion
 
     #pragma region Integer edge cases
-        TEST(FixedPointArithmetic, IntegerAdditionFarOutbounds) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("123.13123123") + 1231231232, ".*");
-            EXPECT_DEATH(fixed("321211") + (-1231231232), ".*");
-            EXPECT_DEATH(fixed("4") + (-1231231232), ".*");
-            EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
-            EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
+        #pragma region Addition
+            TEST(FixedPointArithmetic, IntegerAdditionFarOutbounds) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("123.13123123") + 1231231232, ".*");
+                EXPECT_DEATH(fixed("321211") + (-1231231232), ".*");
+                EXPECT_DEATH(fixed("4") + (-1231231232), ".*");
+                EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
+                EXPECT_DEATH(fixed("-424") + 1231231232, ".*");
 
-            EXPECT_DEATH(doubleFixed("123.13123123") + (-9223423431231232), ".*");
-            EXPECT_DEATH(doubleFixed("3211.234234") + (-6223423431231232), ".*");
-            EXPECT_DEATH(doubleFixed("4.234234") + 5423232324234234234, ".*");
-            EXPECT_DEATH(doubleFixed("-424.234234234") + 9223423431231232, ".*");
-            EXPECT_DEATH(doubleFixed("-424.234") + 9223423431231232, ".*");
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_DEATH(doubleFixed("123.13123123") + (-9223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("3211.234234") + (-6223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("4.234234") + 5423232324234234234, ".*");
+                EXPECT_DEATH(doubleFixed("-424.234234234") + 9223423431231232, ".*");
+                EXPECT_DEATH(doubleFixed("-424.234") + 9223423431231232, ".*");
+                #endif
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionOverflow) {
-            EXPECT_EQ(radian("1.1231231") + 4, radian("1.1231231"));
-            EXPECT_EQ(radian("0.8946522") + 5, radian("1.8946522"));
-            EXPECT_EQ(radian("1.43983412") + 1, radian("0.43983412"));
-            EXPECT_EQ(radian("1.235554") + 1, radian("0.235554"));
-            EXPECT_EQ(radian("1.235554") + 325490234902, radian("1.235554"));
-            EXPECT_EQ(radian("1.235554") + 3255, radian("0.235554"));
-        }
+            TEST(FixedPointArithmetic, IntegerAdditionOverflow) {
+                EXPECT_EQ(radian("1.1231231") + 4, radian("1.1231231"));
+                EXPECT_EQ(radian("0.8946522") + 5, radian("1.8946522"));
+                EXPECT_EQ(radian("1.43983412") + 1, radian("0.43983412"));
+                EXPECT_EQ(radian("1.235554") + 1, radian("0.235554"));
+                EXPECT_EQ(radian("1.235554") + 325490234902, radian("1.235554"));
+                EXPECT_EQ(radian("1.235554") + 3255, radian("0.235554"));
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("1") + 8388607, ".*");
-            EXPECT_DEATH(fixed("2") + 8388606, ".*");
-            EXPECT_DEATH(fixed("8388607") + 1, ".*");
-            EXPECT_DEATH(fixed("8388606") + 2, ".*");
+            TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("1") + 8388607, ".*");
+                EXPECT_DEATH(fixed("2") + 8388606, ".*");
+                EXPECT_DEATH(fixed("8388607") + 1, ".*");
+                EXPECT_DEATH(fixed("8388606") + 2, ".*");
 
-            EXPECT_EQ((fixed("0.99609375") + 8388607), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("1.99609375") + 8388606), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("8388607.99609375") + 0), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("8388606.99609375") + 1), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("0.99609375") + 8388607), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("1.99609375") + 8388606), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388607.99609375") + 0), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388606.99609375") + 1), fixed("8388607.99609375"));
 
-            EXPECT_EQ((fixed("0") + 8388607), fixed("8388607"));
-            EXPECT_EQ((fixed("1") + 8388606), fixed("8388607"));
-            EXPECT_EQ((fixed("8388607") + 0), fixed("8388607"));
-            EXPECT_EQ((fixed("8388606") + 1), fixed("8388607"));
+                EXPECT_EQ((fixed("0") + 8388607), fixed("8388607"));
+                EXPECT_EQ((fixed("1") + 8388606), fixed("8388607"));
+                EXPECT_EQ((fixed("8388607") + 0), fixed("8388607"));
+                EXPECT_EQ((fixed("8388606") + 1), fixed("8388607"));
 
-            EXPECT_DEATH(fixed("-1") + (-8388608), ".*");
-            EXPECT_DEATH(fixed("-2") + (-8388607), ".*");
-            EXPECT_DEATH(fixed("-8388607") + (-2), ".*");
-            EXPECT_DEATH(fixed("-8388606") + (-3), ".*");
+                EXPECT_DEATH(fixed("-1") + (-8388608), ".*");
+                EXPECT_DEATH(fixed("-2") + (-8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607") + (-2), ".*");
+                EXPECT_DEATH(fixed("-8388606") + (-3), ".*");
 
-            EXPECT_DEATH(fixed("-0.00390625") + (-8388608), ".*");
-            EXPECT_DEATH(fixed("-1.00390625") + (-8388607), ".*");
-            EXPECT_DEATH(fixed("-8388607.00390625") + (-2), ".*");
-            EXPECT_DEATH(fixed("-8388606.00390625") + (-3), ".*");
+                EXPECT_DEATH(fixed("-0.00390625") + (-8388608), ".*");
+                EXPECT_DEATH(fixed("-1.00390625") + (-8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607.00390625") + (-2), ".*");
+                EXPECT_DEATH(fixed("-8388606.00390625") + (-3), ".*");
 
-            EXPECT_EQ((fixed("-0.99609375") + (-8388607)), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-1.99609375") + (-8388606)), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-8388606.99609375") + (-1)), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-8388605.99609375") + (-2)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-0.99609375") + (-8388607)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-1.99609375") + (-8388606)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388606.99609375") + (-1)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388605.99609375") + (-2)), fixed("-8388607.99609375"));
 
-            EXPECT_EQ((fixed("-0") + (-8388608)), fixed("-8388608"));
-            EXPECT_EQ((fixed("-1") + (-8388607)), fixed("-8388608"));
-            EXPECT_EQ((fixed("-2") + (-8388606)), fixed("-8388608"));
-            EXPECT_EQ((fixed("-8388607") + (-1)), fixed("-8388608"));
-            EXPECT_EQ((fixed("-8388606") + (-2)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-0") + (-8388608)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-1") + (-8388607)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-2") + (-8388606)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388607") + (-1)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388606") + (-2)), fixed("-8388608"));
 
-            EXPECT_EQ((fixed("1") + (-8388607)), fixed("-8388606"));
-            EXPECT_EQ((fixed("3") + (-8388607)), fixed("-8388604"));
-            EXPECT_EQ((fixed("-8388607") + (1)), fixed("-8388606"));
-            EXPECT_EQ((fixed("-8388607") + (3)), fixed("-8388604"));
+                EXPECT_EQ((fixed("1") + (-8388607)), fixed("-8388606"));
+                EXPECT_EQ((fixed("3") + (-8388607)), fixed("-8388604"));
+                EXPECT_EQ((fixed("-8388607") + (1)), fixed("-8388606"));
+                EXPECT_EQ((fixed("-8388607") + (3)), fixed("-8388604"));
 
-            EXPECT_EQ((fixed("-8388608") + (8388607)), fixed("-1"));
-            EXPECT_EQ((fixed("8388607") + (-8388608)), fixed("-1"));
-            #endif 
-            EXPECT_TRUE(true);
-        }
+                EXPECT_EQ((fixed("-8388608") + (8388607)), fixed("-1"));
+                EXPECT_EQ((fixed("8388607") + (-8388608)), fixed("-1"));
+                #endif 
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("1") + 4503599627370495, ".*");
-            EXPECT_DEATH(doubleFixed("2") + 4503599627370494, ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370494") + 2, ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370493") + 3, ".*");
+            TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("1") + 4503599627370495, ".*");
+                EXPECT_DEATH(doubleFixed("2") + 4503599627370494, ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") + 2, ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370493") + 3, ".*");
 
-            EXPECT_EQ((doubleFixed("0.99951171875") + 4503599627370495), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("1.99951171875") + 4503599627370494), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("4503599627370495.99951171875") + 0), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("4503599627370494.99951171875") + 1), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("0.99951171875") + 4503599627370495), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("1.99951171875") + 4503599627370494), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370495.99951171875") + 0), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370494.99951171875") + 1), doubleFixed("4503599627370495.99951171875"));
 
-            EXPECT_EQ((doubleFixed("0") + 4503599627370495), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("1") + 4503599627370494), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("4503599627370495") + 0), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("4503599627370494") + 1), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("0") + 4503599627370495), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("1") + 4503599627370494), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370495") + 0), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370494") + 1), doubleFixed("4503599627370495"));
 
-            EXPECT_DEATH(doubleFixed("-1") + (-4503599627370496), ".*");
-            EXPECT_DEATH(doubleFixed("-2") + (-4503599627370495), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370496") + (-1), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495") + (-2), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370494") + (-3), ".*");
+                EXPECT_DEATH(doubleFixed("-1") + (-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-2") + (-4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") + (-1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") + (-2), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494") + (-3), ".*");
 
-            EXPECT_DEATH(doubleFixed("-0.00048828125") + (-4503599627370496), ".*");
-            EXPECT_DEATH(doubleFixed("-1.00048828125") + (-4503599627370495), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") + (-1), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") + (-2), ".*");
+                EXPECT_DEATH(doubleFixed("-0.00048828125") + (-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-1.00048828125") + (-4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") + (-1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") + (-2), ".*");
 
-            EXPECT_EQ((doubleFixed("-0.99951171875") + (-4503599627370495)), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-1.99951171875") + (-4503599627370494)), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") + (-1)), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") + (-2)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-0.99951171875") + (-4503599627370495)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-1.99951171875") + (-4503599627370494)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") + (-1)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") + (-2)), doubleFixed("-4503599627370495.99951171875"));
 
-            EXPECT_EQ((doubleFixed("0") + (-4503599627370496)), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-2") + (-4503599627370494)), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-3") + (-4503599627370493)), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-4503599627370494") + (-2)), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-4503599627370493") + (-3)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("0") + (-4503599627370496)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-2") + (-4503599627370494)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-3") + (-4503599627370493)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370494") + (-2)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370493") + (-3)), doubleFixed("-4503599627370496"));
 
-            EXPECT_EQ((doubleFixed("1") + (-4503599627370495)), doubleFixed("-4503599627370494"));
-            EXPECT_EQ((doubleFixed("2") + (-4503599627370492)), doubleFixed("-4503599627370490"));
-            EXPECT_EQ((doubleFixed("-4503599627370495") + (1)), doubleFixed("-4503599627370494"));
-            EXPECT_EQ((doubleFixed("-4503599627370492") + (2)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("1") + (-4503599627370495)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("2") + (-4503599627370492)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370495") + (1)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") + (2)), doubleFixed("-4503599627370490"));
 
-            EXPECT_EQ((doubleFixed("1") + (-4503599627370496)), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((doubleFixed("2") + (-4503599627370492)), doubleFixed("-4503599627370490"));
-            EXPECT_EQ((doubleFixed("-4503599627370496") + (1)), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((doubleFixed("-4503599627370492") + (2)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("1") + (-4503599627370496)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("2") + (-4503599627370492)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370496") + (1)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") + (2)), doubleFixed("-4503599627370490"));
 
-            EXPECT_EQ((doubleFixed("-1") + (4503599627370495)), doubleFixed("4503599627370494"));
-            EXPECT_EQ((doubleFixed("-2") + (4503599627370492)), doubleFixed("4503599627370490"));
-            EXPECT_EQ((doubleFixed("4503599627370495") + (-1)), doubleFixed("4503599627370494"));
-            EXPECT_EQ((doubleFixed("4503599627370492") + (-2)), doubleFixed("4503599627370490"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("0") + 8388608, ".*");
-            EXPECT_DEATH(fixed("1") + 8388609, ".*");
-            EXPECT_DEATH(fixed("4") + 8388610, ".*");
-            EXPECT_DEATH(fixed("12312") + 8388609, ".*");
-            EXPECT_DEATH(fixed("422") + 8388610, ".*");
+                EXPECT_EQ((doubleFixed("-1") + (4503599627370495)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("-2") + (4503599627370492)), doubleFixed("4503599627370490"));
+                EXPECT_EQ((doubleFixed("4503599627370495") + (-1)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("4503599627370492") + (-2)), doubleFixed("4503599627370490"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("0") + 8388608, ".*");
+                EXPECT_DEATH(fixed("1") + 8388609, ".*");
+                EXPECT_DEATH(fixed("4") + 8388610, ".*");
+                EXPECT_DEATH(fixed("12312") + 8388609, ".*");
+                EXPECT_DEATH(fixed("422") + 8388610, ".*");
 
-            EXPECT_DEATH(fixed("0") + 8388609, ".*");
-            EXPECT_DEATH(fixed("0") + 8388610, ".*");
-            EXPECT_DEATH(fixed("0") + 8388609, ".*");
-            EXPECT_DEATH(fixed("0") + 8388610, ".*");
+                EXPECT_DEATH(fixed("0") + 8388609, ".*");
+                EXPECT_DEATH(fixed("0") + 8388610, ".*");
+                EXPECT_DEATH(fixed("0") + 8388609, ".*");
+                EXPECT_DEATH(fixed("0") + 8388610, ".*");
 
-            EXPECT_DEATH(fixed("-1") + 8388609, ".*");
-            EXPECT_DEATH(fixed("-2") + 8388610, ".*");
-            EXPECT_EQ(fixed("-1") + 8388608, fixed("8388607"));
-            EXPECT_EQ(fixed("-2") + 8388608, fixed("8388606"));
-            EXPECT_EQ(fixed("-3") + 8388610, fixed("8388607"));
+                EXPECT_DEATH(fixed("-1") + 8388609, ".*");
+                EXPECT_DEATH(fixed("-2") + 8388610, ".*");
+                EXPECT_EQ(fixed("-1") + 8388608, fixed("8388607"));
+                EXPECT_EQ(fixed("-2") + 8388608, fixed("8388606"));
+                EXPECT_EQ(fixed("-3") + 8388610, fixed("8388607"));
 
-            EXPECT_EQ(fixed("-8388607") + 8388609, fixed("2"));
-            EXPECT_EQ(fixed("-8388607") + 8388610, fixed("3"));
-            EXPECT_EQ(fixed("-8300000") + 8388608, fixed("88608"));
+                EXPECT_EQ(fixed("-8388607") + 8388609, fixed("2"));
+                EXPECT_EQ(fixed("-8388607") + 8388610, fixed("3"));
+                EXPECT_EQ(fixed("-8300000") + 8388608, fixed("88608"));
 
-            EXPECT_DEATH(fixed("-8388606") + 1621777214, ".*");
-            EXPECT_DEATH(fixed("-8388606") + 16777214, ".*");
-            EXPECT_DEATH(fixed("-8388607") + 16777215, ".*");
-            EXPECT_EQ(fixed("-8388607") + 16777214, fixed("8388607"));
-            EXPECT_EQ(fixed("-8388606") + 16777213, fixed("8388607"));
-            EXPECT_EQ(fixed("-8388605") + 16777212, fixed("8388607"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_DEATH(fixed("-8388606") + 1621777214, ".*");
+                EXPECT_DEATH(fixed("-8388606") + 16777214, ".*");
+                EXPECT_DEATH(fixed("-8388607") + 16777215, ".*");
+                EXPECT_EQ(fixed("-8388607") + 16777214, fixed("8388607"));
+                EXPECT_EQ(fixed("-8388606") + 16777213, fixed("8388607"));
+                EXPECT_EQ(fixed("-8388605") + 16777212, fixed("8388607"));
+                #endif
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("0") + 4503599627370500, ".*");
-            EXPECT_DEATH(doubleFixed("1") + 4503599627370497, ".*");
-            EXPECT_DEATH(doubleFixed("4") + 4503599627370498, ".*");
-            EXPECT_DEATH(doubleFixed("12312") + 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("422") + 4503599627370496, ".*");
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("0") + 4503599627370500, ".*");
+                EXPECT_DEATH(doubleFixed("1") + 4503599627370497, ".*");
+                EXPECT_DEATH(doubleFixed("4") + 4503599627370498, ".*");
+                EXPECT_DEATH(doubleFixed("12312") + 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("422") + 4503599627370496, ".*");
 
-            EXPECT_DEATH(doubleFixed("0") + 4503599627370497, ".*");
-            EXPECT_DEATH(doubleFixed("0") + 4503599627370500, ".*");
-            EXPECT_DEATH(doubleFixed("0") + 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("0") + 4503599627370496, ".*");
+                EXPECT_DEATH(doubleFixed("0") + 4503599627370497, ".*");
+                EXPECT_DEATH(doubleFixed("0") + 4503599627370500, ".*");
+                EXPECT_DEATH(doubleFixed("0") + 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("0") + 4503599627370496, ".*");
 
-            EXPECT_DEATH(doubleFixed("-1") + 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("-2") + 4503599627370498, ".*");
-            EXPECT_EQ(doubleFixed("-1") + 4503599627370496, doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-2") + 4503599627370496, doubleFixed("4503599627370494"));
-            EXPECT_EQ(doubleFixed("-3") + 4503599627370498, doubleFixed("4503599627370495"));
+                EXPECT_DEATH(doubleFixed("-1") + 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("-2") + 4503599627370498, ".*");
+                EXPECT_EQ(doubleFixed("-1") + 4503599627370496, doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-2") + 4503599627370496, doubleFixed("4503599627370494"));
+                EXPECT_EQ(doubleFixed("-3") + 4503599627370498, doubleFixed("4503599627370495"));
 
-            EXPECT_EQ(doubleFixed("-4503599627370496") + 4503599627370496, doubleFixed("0"));
-            EXPECT_EQ(doubleFixed("-4503599627370495") + 4503599627370496, doubleFixed("1"));
-            EXPECT_EQ(doubleFixed("-4503599627370400") + 4503599627370496, doubleFixed("96"));
+                EXPECT_EQ(doubleFixed("-4503599627370496") + 4503599627370496, doubleFixed("0"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") + 4503599627370496, doubleFixed("1"));
+                EXPECT_EQ(doubleFixed("-4503599627370400") + 4503599627370496, doubleFixed("96"));
 
-            EXPECT_DEATH(doubleFixed("-4503599627370496") + 900713499254740991, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370496") + 9007199254740992, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495") + 9007199254740991, ".*");
-            EXPECT_EQ(doubleFixed("-4503599627370496") + 9007199254740991, doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-4503599627370495") + 9007199254740990, doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-4503599627370494") + 9007199254740989, doubleFixed("4503599627370495"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_DEATH(doubleFixed("-4503599627370496") + 900713499254740991, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") + 9007199254740992, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") + 9007199254740991, ".*");
+                EXPECT_EQ(doubleFixed("-4503599627370496") + 9007199254740991, doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") + 9007199254740990, doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370494") + 9007199254740989, doubleFixed("4503599627370495"));
+                #endif
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsCustomMaxed) {
-            #if DEBUGGING
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 10), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 11), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 1), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + 2), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + 5), ".*");
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsCustomMaxed) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 10), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 11), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + 1), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + 2), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + 5), ".*");
 
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.78125") + (1)), (FixedPoint<int8,7, true>("0.21875")));
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.5") + (1)), (FixedPoint<int8,7, true>("0.5")));
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.0078125") + (1)), (FixedPoint<int8,7, true>("0.9921875")));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.78125") + (1)), (FixedPoint<int8,7, true>("0.21875")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.5") + (1)), (FixedPoint<int8,7, true>("0.5")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.0078125") + (1)), (FixedPoint<int8,7, true>("0.9921875")));
+                #endif
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerGreaterUnsignedNegativeRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") + (4194304)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") + (4194304)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + (4194604)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + (4194304)), ".*");
+            TEST(FixedPointArithmetic, IntegerGreaterUnsignedNegativeRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") + (4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") + (4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + (4194604)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + (4194304)), ".*");
 
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("0") + (4194303)), (FixedPoint<uint32, 10, true>("4194303")));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("-1") + (-8388609), ".*");
-            EXPECT_DEATH(fixed("-4") + (-8388610), ".*");
-            EXPECT_DEATH(fixed("-12312") + (-8388609), ".*");
-            EXPECT_DEATH(fixed("-422") + (-8388610), ".*");
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") + (4194303)), (FixedPoint<uint32, 10, true>("4194303")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("-1") + (-8388609), ".*");
+                EXPECT_DEATH(fixed("-4") + (-8388610), ".*");
+                EXPECT_DEATH(fixed("-12312") + (-8388609), ".*");
+                EXPECT_DEATH(fixed("-422") + (-8388610), ".*");
 
-            EXPECT_DEATH(fixed("0") + (-8388609), ".*");
-            EXPECT_DEATH(fixed("0") + (-8388610), ".*");
-            EXPECT_DEATH(fixed("0") + (-8388609), ".*");
-            EXPECT_DEATH(fixed("0") + (-8388610), ".*");
+                EXPECT_DEATH(fixed("0") + (-8388609), ".*");
+                EXPECT_DEATH(fixed("0") + (-8388610), ".*");
+                EXPECT_DEATH(fixed("0") + (-8388609), ".*");
+                EXPECT_DEATH(fixed("0") + (-8388610), ".*");
 
-            EXPECT_DEATH(fixed("2") + (-8388611), ".*");
-            EXPECT_DEATH(fixed("1") + (-8388610), ".*");
-            EXPECT_EQ(fixed("2") + (-8388610), fixed("-8388608"));
-            EXPECT_EQ(fixed("3") + (-8388611), fixed("-8388608"));
+                EXPECT_DEATH(fixed("2") + (-8388611), ".*");
+                EXPECT_DEATH(fixed("1") + (-8388610), ".*");
+                EXPECT_EQ(fixed("2") + (-8388610), fixed("-8388608"));
+                EXPECT_EQ(fixed("3") + (-8388611), fixed("-8388608"));
 
-            EXPECT_EQ(fixed("8388607") + (-8388609), fixed("-2"));
-            EXPECT_EQ(fixed("8388607") + (-8388610), fixed("-3"));
-            EXPECT_EQ(fixed("8300000") + (-8388608), fixed("-88608"));
+                EXPECT_EQ(fixed("8388607") + (-8388609), fixed("-2"));
+                EXPECT_EQ(fixed("8388607") + (-8388610), fixed("-3"));
+                EXPECT_EQ(fixed("8300000") + (-8388608), fixed("-88608"));
 
-            EXPECT_DEATH(fixed("838000") + (-996777215), ".*");
-            EXPECT_DEATH(fixed("8388606") + (-16777215), ".*");
-            EXPECT_DEATH(fixed("8388607") + (-16777216), ".*");
-            EXPECT_EQ(fixed("8388607") + (-16777215), fixed("-8388608"));
-            EXPECT_EQ(fixed("8388606") + (-16777214), fixed("-8388608"));
-            EXPECT_EQ(fixed("8388605") + (-16777213), fixed("-8388608"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("-0") + (-4503599627370500), ".*");
-            EXPECT_DEATH(doubleFixed("-1") + (-4503599627370497), ".*");
-            EXPECT_DEATH(doubleFixed("-4") + (-4503599627370498), ".*");
-            EXPECT_DEATH(doubleFixed("-12312") + (-4503599627370530), ".*");
-            EXPECT_DEATH(doubleFixed("-422") + (-4503599627370496), ".*");
+                EXPECT_DEATH(fixed("838000") + (-996777215), ".*");
+                EXPECT_DEATH(fixed("8388606") + (-16777215), ".*");
+                EXPECT_DEATH(fixed("8388607") + (-16777216), ".*");
+                EXPECT_EQ(fixed("8388607") + (-16777215), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388606") + (-16777214), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388605") + (-16777213), fixed("-8388608"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("-0") + (-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("-1") + (-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("-4") + (-4503599627370498), ".*");
+                EXPECT_DEATH(doubleFixed("-12312") + (-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("-422") + (-4503599627370496), ".*");
 
-            EXPECT_DEATH(doubleFixed("0") + (-4503599627370497), ".*");
-            EXPECT_DEATH(doubleFixed("0") + (-4503599627370500), ".*");
-            EXPECT_DEATH(doubleFixed("0") + (-4503599627370530), ".*");
-            EXPECT_DEATH(doubleFixed("0") + (-4503599627370498), ".*");
+                EXPECT_DEATH(doubleFixed("0") + (-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("0") + (-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("0") + (-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("0") + (-4503599627370498), ".*");
 
-            EXPECT_DEATH(doubleFixed("1") + (-4503599627370530), ".*");
-            EXPECT_DEATH(doubleFixed("2") +(-4503599627370499), ".*");
-            EXPECT_EQ(doubleFixed("1") + (-4503599627370496), doubleFixed("-4503599627370495"));
-            EXPECT_EQ(doubleFixed("2") +(- 4503599627370496), doubleFixed("-4503599627370494"));
-            EXPECT_EQ(doubleFixed("3") + (-4503599627370498), doubleFixed("-4503599627370495"));
+                EXPECT_DEATH(doubleFixed("1") + (-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("2") +(-4503599627370499), ".*");
+                EXPECT_EQ(doubleFixed("1") + (-4503599627370496), doubleFixed("-4503599627370495"));
+                EXPECT_EQ(doubleFixed("2") +(- 4503599627370496), doubleFixed("-4503599627370494"));
+                EXPECT_EQ(doubleFixed("3") + (-4503599627370498), doubleFixed("-4503599627370495"));
 
-            EXPECT_EQ(doubleFixed("4503599627370495") + (-4503599627370496), doubleFixed("-1"));
-            EXPECT_EQ(doubleFixed("4503599627370494") + (-4503599627370496), doubleFixed("-2"));
-            EXPECT_EQ(doubleFixed("4503599627370400") + (-4503599627370496), doubleFixed("-96"));
+                EXPECT_EQ(doubleFixed("4503599627370495") + (-4503599627370496), doubleFixed("-1"));
+                EXPECT_EQ(doubleFixed("4503599627370494") + (-4503599627370496), doubleFixed("-2"));
+                EXPECT_EQ(doubleFixed("4503599627370400") + (-4503599627370496), doubleFixed("-96"));
 
-            EXPECT_DEATH(doubleFixed("4503599627370495") + (-900713499254740991), ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370495") + (-9007199254740992), ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370494") + (-9007199254740991), ".*");
-            EXPECT_EQ(doubleFixed("4503599627370495") + (-9007199254740991), doubleFixed("-4503599627370496"));
-            EXPECT_EQ(doubleFixed("4503599627370494") + (-9007199254740990), doubleFixed("-4503599627370496"));
-            EXPECT_EQ(doubleFixed("4503599627370493") + (-9007199254740989), doubleFixed("-4503599627370496"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_DEATH(doubleFixed("4503599627370495") + (-900713499254740991), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370495") + (-9007199254740992), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") + (-9007199254740991), ".*");
+                EXPECT_EQ(doubleFixed("4503599627370495") + (-9007199254740991), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370494") + (-9007199254740990), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370493") + (-9007199254740989), doubleFixed("-4503599627370496"));
+                #endif
+                EXPECT_TRUE(true);
+            }
 
-        TEST(FixedPointArithmetic, IntegerAdditionLesserUnsignedNegativeRhs) {
+            TEST(FixedPointArithmetic, IntegerAdditionLesserUnsignedNegativeRhs) {
             #if DEBUGGING
             EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") + (-5)), ".*");
             EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + (-1)), ".*");
@@ -1915,645 +2056,1162 @@
 
             EXPECT_TRUE(true);
         }
-
-        // We don't need to test inverse direction of addition as that part is already handled
-
-        TEST(FixedPointArithmetic, IntegerSubtractionFarOutbounds) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("123.13123123") - (-1231231232), ".*");
-            EXPECT_DEATH(fixed("321211") - 1231231232, ".*");
-            EXPECT_DEATH(fixed("4") - 1231231232, ".*");
-            EXPECT_DEATH(fixed("-424") - (-1231231232), ".*");
-            EXPECT_DEATH(fixed("-424") - (-1231231232), ".*");
-
-            EXPECT_DEATH(doubleFixed("123.13123123") - 9223423431231232, ".*");
-            EXPECT_DEATH(doubleFixed("3211.234234") - 6223423431231232, ".*");
-            EXPECT_DEATH(doubleFixed("4.234234") - (-5423232324234234234), ".*");
-            EXPECT_DEATH(doubleFixed("-424.234234234") - (-9223423431231232), ".*");
-            EXPECT_DEATH(doubleFixed("-424.234") - (-9223423431231232), ".*");
-            #endif
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionOverflow) {
-            EXPECT_EQ(radian("1.1231231") - (-4), radian("1.1231231"));
-            EXPECT_EQ(radian("0.8946522") - (-5), radian("1.8946522"));
-            EXPECT_EQ(radian("1.43983412") - (-1), radian("0.43983412"));
-            EXPECT_EQ(radian("1.235554") - (-1), radian("0.235554"));
-            EXPECT_EQ(radian("1.235554") - (-325490234902), radian("1.235554"));
-            EXPECT_EQ(radian("1.235554") - (-3255), radian("0.235554"));
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("0") - (-8388608), ".*");
-            EXPECT_DEATH(fixed("1") - (-8388607), ".*");
-            EXPECT_DEATH(fixed("2") - (-8388606), ".*");
-            EXPECT_DEATH(fixed("8388607") - (-1), ".*");
-            EXPECT_DEATH(fixed("8388606") - (-2), ".*");
-
-            EXPECT_EQ(fixed("-1") - (-8388608), fixed("8388607"));
-            EXPECT_EQ(fixed("-2") - (-8388608), fixed("8388606"));
-
-            EXPECT_EQ((fixed("0.99609375") - (-8388607)), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("1.99609375") - (-8388606)), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("8388607.99609375") - 0), fixed("8388607.99609375"));
-            EXPECT_EQ((fixed("8388606.99609375") - (-1)), fixed("8388607.99609375"));
-
-            EXPECT_EQ((fixed("0") - (-8388607)), fixed("8388607"));
-            EXPECT_EQ((fixed("1") - (-8388606)), fixed("8388607"));
-            EXPECT_EQ((fixed("8388607") - 0), fixed("8388607"));
-            EXPECT_EQ((fixed("8388606") - (-1)), fixed("8388607"));
-
-            EXPECT_DEATH(fixed("-1") - 8388608, ".*");
-            EXPECT_DEATH(fixed("-2") - 8388607, ".*");
-            EXPECT_DEATH(fixed("-8388607") - 2, ".*");
-            EXPECT_DEATH(fixed("-8388606") - 3, ".*");
-
-            EXPECT_DEATH(fixed("-0.00390625") - 8388608, ".*");
-            EXPECT_DEATH(fixed("-1.00390625") - 8388607, ".*");
-            EXPECT_DEATH(fixed("-8388607.00390625") - 2, ".*");
-            EXPECT_DEATH(fixed("-8388606.00390625") - 3, ".*");
-
-            EXPECT_EQ((fixed("-0.99609375") - 8388607), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-1.99609375") - 8388606), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-8388606.99609375") - 1), fixed("-8388607.99609375"));
-            EXPECT_EQ((fixed("-8388605.99609375") - 2), fixed("-8388607.99609375"));
-
-            EXPECT_EQ((fixed("-0") - 8388608), fixed("-8388608"));
-            EXPECT_EQ((fixed("-1") - 8388607), fixed("-8388608"));
-            EXPECT_EQ((fixed("-2") - 8388606), fixed("-8388608"));
-            EXPECT_EQ((fixed("-8388607") - 1), fixed("-8388608"));
-            EXPECT_EQ((fixed("-8388606") - 2), fixed("-8388608"));
-
-            EXPECT_EQ((fixed("1") - 8388607), fixed("-8388606"));
-            EXPECT_EQ((fixed("3") - 8388607), fixed("-8388604"));
-            EXPECT_EQ((fixed("-8388607") - (-1)), fixed("-8388606"));
-            EXPECT_EQ((fixed("-8388607") - (-3)), fixed("-8388604"));
-
-            EXPECT_EQ((fixed("-8388608") - (-8388607)), fixed("-1"));
-            EXPECT_EQ((fixed("8388607") - 8388608), fixed("-1"));
-            #endif 
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("422") - (-4503599627370496), ".*");
-            EXPECT_DEATH(doubleFixed("1") - (-4503599627370495), ".*");
-            EXPECT_DEATH(doubleFixed("2") - (-4503599627370494), ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370494") - (-2), ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370493") - (-3), ".*");
-            EXPECT_DEATH(doubleFixed("0") - (-4503599627370496), ".*");
-
-            EXPECT_EQ((doubleFixed("0.99951171875") - (-4503599627370495)), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("1.99951171875") - (-4503599627370494)), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("4503599627370495.99951171875") - 0), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("4503599627370494.99951171875") - (-1)), doubleFixed("4503599627370495.99951171875"));
-
-            EXPECT_EQ((doubleFixed("0") - (-4503599627370495)), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("1") - (-4503599627370494)), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("4503599627370495") - 0), doubleFixed("4503599627370495"));
-            EXPECT_EQ((doubleFixed("4503599627370494") - (-1)), doubleFixed("4503599627370495"));
-
-            EXPECT_DEATH(doubleFixed("-1") - 4503599627370496, ".*");
-            EXPECT_DEATH(doubleFixed("-2") - 4503599627370495, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370496") - 1, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495") - 2, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370494") - 3, ".*");
-
-            EXPECT_DEATH(doubleFixed("-0.00048828125") - 4503599627370496, ".*");
-            EXPECT_DEATH(doubleFixed("-1.00048828125") - 4503599627370495, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") - 1, ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") - 2, ".*");
-
-            EXPECT_EQ((doubleFixed("-0.99951171875") - 4503599627370495), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-1.99951171875") - 4503599627370494), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") - 1), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") - 2), doubleFixed("-4503599627370495.99951171875"));
-
-            EXPECT_EQ((doubleFixed("0") - 4503599627370496), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-2") - 4503599627370494), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-3") - 4503599627370493), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-4503599627370494") - 2), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((doubleFixed("-4503599627370493") - 3), doubleFixed("-4503599627370496"));
-
-            EXPECT_EQ((doubleFixed("1") - 4503599627370495), doubleFixed("-4503599627370494"));
-            EXPECT_EQ((doubleFixed("2") - 4503599627370492), doubleFixed("-4503599627370490"));
-            EXPECT_EQ((doubleFixed("-4503599627370495") - (-1)), doubleFixed("-4503599627370494"));
-            EXPECT_EQ((doubleFixed("-4503599627370492") - (-2)), doubleFixed("-4503599627370490"));
-
-            EXPECT_EQ((doubleFixed("1") - 4503599627370496), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((doubleFixed("2") - 4503599627370492), doubleFixed("-4503599627370490"));
-            EXPECT_EQ((doubleFixed("-4503599627370496") - (-1)), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((doubleFixed("-4503599627370492") - (-2)), doubleFixed("-4503599627370490"));
-
-            EXPECT_EQ((doubleFixed("-1") - (-4503599627370495)), doubleFixed("4503599627370494"));
-            EXPECT_EQ((doubleFixed("-2") - (-4503599627370492)), doubleFixed("4503599627370490"));
-            EXPECT_EQ((doubleFixed("4503599627370495") - 1), doubleFixed("4503599627370494"));
-            EXPECT_EQ((doubleFixed("4503599627370492") - 2), doubleFixed("4503599627370490"));
-
-            EXPECT_EQ(doubleFixed("-1") - (-4503599627370496), doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-2") - (-4503599627370496), doubleFixed("4503599627370494"));
-
-            EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370496), doubleFixed("0"));
-            EXPECT_EQ(doubleFixed("-4503599627370495") - (-4503599627370496), doubleFixed("1"));
-            EXPECT_EQ(doubleFixed("-4503599627370400") - (-4503599627370496), doubleFixed("96"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+        
+            TEST(FixedPointArithmetic, IntegerAdditionFarOutbounds_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("123.13123123") + static_cast<int32>(1231231232), ".*");
+                EXPECT_DEATH(fixed("321211") + static_cast<int64>(-1231231232), ".*");
+                EXPECT_DEATH(fixed("4") + static_cast<int32>(-1231231232), ".*");
+                EXPECT_DEATH(fixed("-424") + static_cast<uint32>(1231231232), ".*");
+                EXPECT_DEATH(fixed("-424") + static_cast<int32>(1231231232), ".*");
             
-        TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("1") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("4") - (-8388610), ".*");
-            EXPECT_DEATH(fixed("12312") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("422") - (-8388610), ".*");
-
-            EXPECT_DEATH(fixed("0") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("0") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("0") - (-8388610), ".*");
-            EXPECT_DEATH(fixed("0") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("0") - (-8388610), ".*");
-
-            EXPECT_DEATH(fixed("-1") - (-8388609), ".*");
-            EXPECT_DEATH(fixed("-2") - (-8388610), ".*");
-            EXPECT_EQ(fixed("-3") - (-8388610), fixed("8388607"));
-
-            EXPECT_EQ(fixed("-8388607") - (-8388609), fixed("2"));
-            EXPECT_EQ(fixed("-8388607") - (-8388610), fixed("3"));
-            EXPECT_EQ(fixed("-8300000") - (-8388608), fixed("88608"));
-
-            EXPECT_DEATH(fixed("-8388606") - (-1621777214), ".*");
-            EXPECT_DEATH(fixed("-8388606") - (-16777214), ".*");
-            EXPECT_DEATH(fixed("-8388607") - (-16777215), ".*");
-            EXPECT_EQ(fixed("-8388607") - (-16777214), fixed("8388607"));
-            EXPECT_EQ(fixed("-8388606") - (-16777213), fixed("8388607"));
-            EXPECT_EQ(fixed("-8388605") - (-16777212), fixed("8388607"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("0") - (-4503599627370500), ".*");
-            EXPECT_DEATH(doubleFixed("1") - (-4503599627370497), ".*");
-            EXPECT_DEATH(doubleFixed("4") - (-4503599627370498), ".*");
-            EXPECT_DEATH(doubleFixed("12312") - (-4503599627370530), ".*");
-
-            EXPECT_DEATH(doubleFixed("0") - (-4503599627370497), ".*");
-            EXPECT_DEATH(doubleFixed("0") - (-4503599627370500), ".*");
-            EXPECT_DEATH(doubleFixed("0") - (-4503599627370530), ".*");
-
-            EXPECT_DEATH(doubleFixed("-1") - (-4503599627370530), ".*");
-            EXPECT_DEATH(doubleFixed("-2") - (-4503599627370498), ".*");
-            EXPECT_EQ(doubleFixed("-3") - (-4503599627370498), doubleFixed("4503599627370495"));
-
-            EXPECT_DEATH(doubleFixed("-4503599627370496") - (-900713499254740991), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370496") - (-9007199254740992), ".*");
-            EXPECT_DEATH(doubleFixed("-4503599627370495") - (-9007199254740991), ".*");
-            EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370497), doubleFixed("1"));
-            EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370500), doubleFixed("4"));
-            EXPECT_EQ(doubleFixed("-4503599627370496") - (-9007199254740991), doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-4503599627370495") - (-9007199254740990), doubleFixed("4503599627370495"));
-            EXPECT_EQ(doubleFixed("-4503599627370494") - (-9007199254740989), doubleFixed("4503599627370495"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhsCustomMaxed) {
-            #if DEBUGGING
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-10)), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-11)), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-1)), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") - (-2)), ".*");
-            EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") - (-5)), ".*");
-
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.78125") - (-1)), (FixedPoint<int8,7, true>("0.21875")));
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.5") - (-1)), (FixedPoint<int8,7, true>("0.5")));
-            EXPECT_EQ((FixedPoint<int8,7, true>("-0.0078125") - (-1)), (FixedPoint<int8,7, true>("0.9921875")));
-            #endif
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerSubtractionGreaterUnsignedNegativeRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - (-4194304)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") - (-4194304)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (-4194604)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (-4194304)), ".*");
-
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - (-4194303)), (FixedPoint<uint32, 10, true>("4194303")));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_DEATH(doubleFixed("123.13123123") + static_cast<int64>(-9223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("3211.234234") + static_cast<int64>(-6223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("4.234234") + static_cast<uint64>(5423232324234234234), ".*");
+                EXPECT_DEATH(doubleFixed("-424.234234234") + static_cast<int64>(9223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("-424.234") + static_cast<int64>(9223423431231232), ".*");
+                #endif
+                EXPECT_TRUE(true);
+            }
             
-        TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(fixed("-1") - 8388609, ".*");
-            EXPECT_DEATH(fixed("-4") - 8388610, ".*");
-            EXPECT_DEATH(fixed("-12312") - 8388609, ".*");
-            EXPECT_DEATH(fixed("-422") - 8388610, ".*");
-
-            EXPECT_DEATH(fixed("0") - 8388609, ".*");
-            EXPECT_DEATH(fixed("0") - 8388610, ".*");
-            EXPECT_DEATH(fixed("0") - 8388609, ".*");
-            EXPECT_DEATH(fixed("0") - 8388610, ".*");
-
-            EXPECT_DEATH(fixed("2") - 8388611, ".*");
-            EXPECT_DEATH(fixed("1") - 8388610, ".*");
-            EXPECT_EQ(fixed("2") - 8388610, fixed("-8388608"));
-            EXPECT_EQ(fixed("3") - 8388611, fixed("-8388608"));
-
-            EXPECT_EQ(fixed("8388607") - 8388609, fixed("-2"));
-            EXPECT_EQ(fixed("8388607") - 8388610, fixed("-3"));
-            EXPECT_EQ(fixed("8300000") - 8388608, fixed("-88608"));
-
-            EXPECT_DEATH(fixed("838000") - 996777215, ".*");
-            EXPECT_DEATH(fixed("8388606") - 16777215, ".*");
-            EXPECT_DEATH(fixed("8388607") - 16777216, ".*");
-            EXPECT_EQ(fixed("8388607") - 16777215, fixed("-8388608"));
-            EXPECT_EQ(fixed("8388606") - 16777214, fixed("-8388608"));
-            EXPECT_EQ(fixed("8388605") - 16777213, fixed("-8388608"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+            TEST(FixedPointArithmetic, IntegerAdditionOverflow_DifferentTypes) {
+                EXPECT_EQ(radian("1.1231231") + static_cast<int32>(4), radian("1.1231231"));
+                EXPECT_EQ(radian("0.8946522") + static_cast<int64>(5), radian("1.8946522"));
+                EXPECT_EQ(radian("1.43983412") + static_cast<uint32>(1), radian("0.43983412"));
+                EXPECT_EQ(radian("1.235554") + static_cast<uint64>(1), radian("0.235554"));
+                EXPECT_EQ(radian("1.235554") + static_cast<int64>(325490234902), radian("1.235554"));
+                EXPECT_EQ(radian("1.235554") + static_cast<int64>(3255), radian("0.235554"));
+            }
             
-        TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(doubleFixed("-0") - 4503599627370500, ".*");
-            EXPECT_DEATH(doubleFixed("-1") - 4503599627370497, ".*");
-            EXPECT_DEATH(doubleFixed("-4") - 4503599627370498, ".*");
-            EXPECT_DEATH(doubleFixed("-12312") - 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("-422") - 4503599627370496, ".*");
-
-            EXPECT_DEATH(doubleFixed("0") - 4503599627370497, ".*");
-            EXPECT_DEATH(doubleFixed("0") - 4503599627370500, ".*");
-            EXPECT_DEATH(doubleFixed("0") - 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("0") - 4503599627370498, ".*");
-
-            EXPECT_DEATH(doubleFixed("1") - 4503599627370530, ".*");
-            EXPECT_DEATH(doubleFixed("2") - 4503599627370499, ".*");
-            EXPECT_EQ(doubleFixed("1") - 4503599627370496, doubleFixed("-4503599627370495"));
-            EXPECT_EQ(doubleFixed("2") - 4503599627370496, doubleFixed("-4503599627370494"));
-            EXPECT_EQ(doubleFixed("3") - 4503599627370498, doubleFixed("-4503599627370495"));
-
-            EXPECT_EQ(doubleFixed("4503599627370495") - 4503599627370496, doubleFixed("-1"));
-            EXPECT_EQ(doubleFixed("4503599627370494") - 4503599627370496, doubleFixed("-2"));
-            EXPECT_EQ(doubleFixed("4503599627370400") - 4503599627370496, doubleFixed("-96"));
-
-            EXPECT_DEATH(doubleFixed("4503599627370495") - 900713499254740991, ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370495") - 9007199254740992, ".*");
-            EXPECT_DEATH(doubleFixed("4503599627370494") - 9007199254740991, ".*");
-            EXPECT_EQ(doubleFixed("4503599627370495") - 9007199254740991, doubleFixed("-4503599627370496"));
-            EXPECT_EQ(doubleFixed("4503599627370494") - 9007199254740990, doubleFixed("-4503599627370496"));
-            EXPECT_EQ(doubleFixed("4503599627370493") - 9007199254740989, doubleFixed("-4503599627370496"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerLesserUnsignedNegativeRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - 5), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 1), ".*");
-
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 1), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - int16(32767)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - int8(127)), ".*");
-
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - 2), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - int16(32767)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - int8(127)), ".*");
-
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - 156), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - 157), ".*");
-
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("126") - int8(127)), ".*");
-            EXPECT_DEATH((FixedPoint<uint32, 10, true>("32766") - int16(32767)), ".*");
-
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - 0), (FixedPoint<uint32, 10, true>("0")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - (-1)), (FixedPoint<uint32, 10, true>("1")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - 1), (FixedPoint<uint32, 10, true>("0")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - 0), (FixedPoint<uint32, 10, true>("1")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - 155), (FixedPoint<uint32, 10, true>("0")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - 154), (FixedPoint<uint32, 10, true>("1")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("32767") - int16(32767)), (FixedPoint<uint32, 10, true>("0")));
-            EXPECT_EQ((FixedPoint<uint32, 10, true>("32768") - int16(32767)), (FixedPoint<uint32, 10, true>("1")));
-            #endif
-
-            EXPECT_TRUE(true);
-        }
-
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionFarOutbounds) {
-            #if DEBUGGING
-            EXPECT_DEATH(1231231232 - fixed("123.13123123"), ".*");
-            EXPECT_DEATH((-1231231232) - fixed("321211"), ".*");
-            EXPECT_DEATH((-1231231232) - fixed("4"), ".*");
-            EXPECT_DEATH(1231231232 - fixed("-424"), ".*");
-            EXPECT_DEATH(1231231232 - fixed("-424"), ".*");
-        
-            EXPECT_DEATH((-9223423431231232) - doubleFixed("123.13123123"), ".*");
-            EXPECT_DEATH((-6223423431231232) - doubleFixed("3211.234234"), ".*");
-            EXPECT_DEATH(5423232324234234234 - doubleFixed("4.234234"), ".*");
-            EXPECT_DEATH(9223423431231232 - doubleFixed("-424.234234234"), ".*");
-            EXPECT_DEATH(9223423431231232 - doubleFixed("-424.234"), ".*");
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionOverflow) {
-            // Underflow behavior is kinda weird lmao in this case, its easier to think of the left part underflowing then the subtraction happens
-            EXPECT_EQ((-4) - radian("1.1231231"), radian("0.8768769"));
-            EXPECT_EQ((-5) - radian("0.8946522"), radian("0.1053478"));
-            EXPECT_EQ((-1) - radian("1.43983412"), radian("1.56016588"));
-            EXPECT_EQ((-1) - radian("1.21875"), radian("1.78125"));
-            EXPECT_EQ((-325490234902) - radian("1.21875"), radian("0.78125"));
-            EXPECT_EQ((-3255) - radian("1.765625"), radian("1.234375"));
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionInBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((-8388608) - fixed("1"), ".*");
-            EXPECT_DEATH((-8388607) - fixed("2"), ".*");
-            EXPECT_DEATH((-8388606) - fixed("3"), ".*");
-            EXPECT_DEATH((-2) - fixed("8388607"), ".*");
-            EXPECT_DEATH((-3) - fixed("8388606"), ".*");
-        
-            EXPECT_EQ((-8388608) - fixed("-1"), fixed("-8388607"));
-            EXPECT_EQ((-8388608) - fixed("-2"), fixed("-8388606"));
-        
-            EXPECT_EQ((-8388607) - fixed("0.99609375"), fixed("-8388607.99609375"));
-            EXPECT_EQ((-8388606) - fixed("1.99609375"), fixed("-8388607.99609375"));
-            EXPECT_EQ(0 - fixed("8388607.99609375"), fixed("-8388607.99609375"));
-            EXPECT_EQ((-1) - fixed("8388606.99609375"), fixed("-8388607.99609375"));
-        
-            EXPECT_EQ((-8388607) - fixed("0"), fixed("-8388607"));
-            EXPECT_EQ((-8388606) - fixed("1"), fixed("-8388607"));
-            EXPECT_EQ(0 - fixed("8388607"), fixed("-8388607"));
-            EXPECT_EQ((-1) - fixed("8388606"), fixed("-8388607"));
-        
-            EXPECT_DEATH(8388608 - fixed("-1"), ".*");
-            EXPECT_DEATH(8388607 - fixed("-2"), ".*");
-            EXPECT_DEATH(2 - fixed("-8388607"), ".*");
-            EXPECT_DEATH(3 - fixed("-8388606"), ".*");
-        
-            EXPECT_DEATH(8388608 - fixed("-0.00390625"), ".*");
-            EXPECT_DEATH(8388607 - fixed("-1.00390625"), ".*");
-            EXPECT_DEATH(2 - fixed("-8388607.00390625"), ".*");
-            EXPECT_DEATH(3 - fixed("-8388606.00390625"), ".*");
-        
-            EXPECT_EQ(8388607 - fixed("-0.99609375"), fixed("8388607.99609375"));
-            EXPECT_EQ(8388606 - fixed("-1.99609375"), fixed("8388607.99609375"));
-            EXPECT_EQ(1 - fixed("-8388606.99609375"), fixed("8388607.99609375"));
-            EXPECT_EQ(2 - fixed("-8388605.99609375"), fixed("8388607.99609375"));
-        
-            EXPECT_EQ(8388607 - fixed("-0"), fixed("8388607"));
-            EXPECT_EQ(8388606 - fixed("-1"), fixed("8388607"));
-            EXPECT_EQ(8388605 - fixed("-2"), fixed("8388607"));
-            EXPECT_EQ(-1 - fixed("-8388608"), fixed("8388607"));
-            EXPECT_EQ(0 - fixed("-8388607"), fixed("8388607"));
-            EXPECT_DEATH(1 - fixed("-8388607"), ".*");
-            EXPECT_DEATH(2 - fixed("-8388606"), ".*");
-        
-            EXPECT_EQ(8388607 - fixed("1"), fixed("8388606"));
-            EXPECT_EQ(8388607 - fixed("3"), fixed("8388604"));
-            EXPECT_EQ((-1) - fixed("-8388607"), fixed("8388606"));
-            EXPECT_EQ((-3) - fixed("-8388607"), fixed("8388604"));
-        
-            EXPECT_EQ((-8388607) - fixed("-8388608"), fixed("1"));
-            EXPECT_EQ(8388608 - fixed("8388607"), fixed("1"));
-            #endif 
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionInBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH((-4503599627370496) - doubleFixed("422"), ".*");
-            EXPECT_DEATH((-4503599627370495) - doubleFixed("2"), ".*");
-            EXPECT_DEATH((-4503599627370494) - doubleFixed("3"), ".*");
-            EXPECT_DEATH((-3) - doubleFixed("4503599627370494"), ".*");
-            EXPECT_DEATH((-4) - doubleFixed("4503599627370493"), ".*");
-            EXPECT_DEATH((-4503599627370497) - doubleFixed("0"), ".*");
-        
-            EXPECT_EQ((-4503599627370495) - doubleFixed("0.99951171875"), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((-4503599627370494) - doubleFixed("1.99951171875"), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ(0 - doubleFixed("4503599627370495.99951171875"), doubleFixed("-4503599627370495.99951171875"));
-            EXPECT_EQ((-1) - doubleFixed("4503599627370494.99951171875"), doubleFixed("-4503599627370495.99951171875"));
-        
-            EXPECT_EQ((-4503599627370495) - doubleFixed("0"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((-4503599627370494) - doubleFixed("1"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ(0 - doubleFixed("4503599627370495"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((-1) - doubleFixed("4503599627370494"), doubleFixed("-4503599627370495"));
-        
-            EXPECT_DEATH(4503599627370496 - doubleFixed("-1"), ".*");
-            EXPECT_DEATH(4503599627370495 - doubleFixed("-2"), ".*");
-            EXPECT_DEATH(1 - doubleFixed("-4503599627370496"), ".*");
-            EXPECT_DEATH(2 - doubleFixed("-4503599627370495"), ".*");
-            EXPECT_DEATH(3 - doubleFixed("-4503599627370494"), ".*");
-        
-            EXPECT_DEATH(4503599627370496 - doubleFixed("-0.00048828125"), ".*");
-            EXPECT_DEATH(4503599627370495 - doubleFixed("-1.00048828125"), ".*");
-            EXPECT_DEATH(1 - doubleFixed("-4503599627370495.00048828125"), ".*");
-            EXPECT_DEATH(2 - doubleFixed("-4503599627370494.00048828125"), ".*");
-        
-            EXPECT_EQ(4503599627370495 - doubleFixed("-0.99951171875"), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ(4503599627370494 - doubleFixed("-1.99951171875"), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ(1 - doubleFixed("-4503599627370494.99951171875"), doubleFixed("4503599627370495.99951171875"));
-            EXPECT_EQ(2 - doubleFixed("-4503599627370493.99951171875"), doubleFixed("4503599627370495.99951171875"));
-        
-            EXPECT_EQ(4503599627370495 - doubleFixed("0"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(4503599627370493 - doubleFixed("-2"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(4503599627370492 - doubleFixed("-3"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(1 - doubleFixed("-4503599627370494"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(2 - doubleFixed("-4503599627370493"), doubleFixed("4503599627370495"));
-        
-            EXPECT_EQ(4503599627370495 - doubleFixed("1"), doubleFixed("4503599627370494"));
-            EXPECT_EQ(4503599627370492 - doubleFixed("2"), doubleFixed("4503599627370490"));
-            EXPECT_EQ((-1) - doubleFixed("-4503599627370495"), doubleFixed("4503599627370494"));
-            EXPECT_EQ((-2) - doubleFixed("-4503599627370492"), doubleFixed("4503599627370490"));
-        
-            EXPECT_EQ(4503599627370496 - doubleFixed("1"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(4503599627370492 - doubleFixed("2"), doubleFixed("4503599627370490"));
-            EXPECT_EQ((-1) - doubleFixed("-4503599627370496"), doubleFixed("4503599627370495"));
-            EXPECT_EQ((-2) - doubleFixed("-4503599627370492"), doubleFixed("4503599627370490"));
-        
-            EXPECT_EQ((-4503599627370495) - doubleFixed("-1"), doubleFixed("-4503599627370494"));
-            EXPECT_EQ((-4503599627370492) - doubleFixed("-2"), doubleFixed("-4503599627370490"));
-            EXPECT_EQ(1 - doubleFixed("4503599627370495"), doubleFixed("-4503599627370494"));
-            EXPECT_EQ(2 - doubleFixed("4503599627370492"), doubleFixed("-4503599627370490"));
-        
-            EXPECT_EQ((-4503599627370496) - doubleFixed("-1"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((-4503599627370496) - doubleFixed("-2"), doubleFixed("-4503599627370494"));
-        
-            EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370496"), doubleFixed("0"));
-            EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370495"), doubleFixed("-1"));
-            EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370400"), doubleFixed("-96"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+            TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhs_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("1") + static_cast<int32>(8388607), ".*");
+                EXPECT_DEATH(fixed("2") + static_cast<int64>(8388606), ".*");
+                EXPECT_DEATH(fixed("8388607") + static_cast<uint32>(1), ".*");
+                EXPECT_DEATH(fixed("8388606") + static_cast<uint64>(2), ".*");
             
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((-8388609) - fixed("1"), ".*");
-            EXPECT_DEATH((-8388610) - fixed("4"), ".*");
-            EXPECT_DEATH((-8388609) - fixed("12312"), ".*");
-            EXPECT_DEATH((-8388610) - fixed("422"), ".*");
-        
-            EXPECT_DEATH((-8388609) - fixed("0"), ".*");
-            EXPECT_DEATH((-8388609) - fixed("0"), ".*");
-            EXPECT_DEATH((-8388610) - fixed("0"), ".*");
-            EXPECT_DEATH((-8388609) - fixed("0"), ".*");
-            EXPECT_DEATH((-8388610) - fixed("0"), ".*");
-
-            EXPECT_DEATH((-8388610) - fixed("-1"), ".*");
-            EXPECT_DEATH((-83886011) - fixed("-2"), ".*");
-
-            EXPECT_EQ((-8388609) - fixed("-1"), fixed("-8388608"));
-            EXPECT_EQ((-8388610) - fixed("-2"), fixed("-8388608"));
-            EXPECT_EQ((-8388610) - fixed("-3"), fixed("-8388607"));
-        
-            EXPECT_EQ((-8388609) - fixed("-8388607"), fixed("-2"));
-            EXPECT_EQ((-8388610) - fixed("-8388607"), fixed("-3"));
-            EXPECT_EQ((-8388608) - fixed("-8300000"), fixed("-88608"));
-
-            EXPECT_DEATH((-1621777214) - fixed("-8388606"), ".*");
-            EXPECT_DEATH((-16777215) - fixed("-8388606"), ".*");
-            EXPECT_DEATH((-16777216) - fixed("-8388607"), ".*");
-            EXPECT_EQ((-16777215) - fixed("-8388607"), fixed("-8388608"));
-            EXPECT_EQ((-16777214) - fixed("-8388606"), fixed("-8388608"));
-            EXPECT_EQ((-16777213) - fixed("-8388605"), fixed("-8388608"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH((-4503599627370500) - doubleFixed("0"), ".*");
-            EXPECT_DEATH((-4503599627370497) - doubleFixed("1"), ".*");
-            EXPECT_DEATH((-4503599627370498) - doubleFixed("4"), ".*");
-            EXPECT_DEATH((-4503599627370530) - doubleFixed("12312"), ".*");
-        
-            EXPECT_DEATH((-4503599627370497) - doubleFixed("0"), ".*");
-            EXPECT_DEATH((-4503599627370500) - doubleFixed("0"), ".*");
-            EXPECT_DEATH((-4503599627370530) - doubleFixed("0"), ".*");
-        
-            EXPECT_DEATH((-4503599627370530) - doubleFixed("-1"), ".*");
-            EXPECT_DEATH((-45035996273705001) - doubleFixed("-2"), ".*");
-            EXPECT_DEATH((-4503599627370500) - doubleFixed("-3"), ".*");
-
-            EXPECT_EQ((-4503599627370500) - doubleFixed("-4"), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((-4503599627370498) - doubleFixed("-3"), doubleFixed("-4503599627370495"));
-        
-            EXPECT_DEATH((-900713499254740991) - doubleFixed("-4503599627370496"), ".*");
-            EXPECT_DEATH((-9007199254740993) - doubleFixed("-4503599627370496"), ".*");
-            EXPECT_DEATH((-9007199254740992) - doubleFixed("-4503599627370495"), ".*");
-            EXPECT_EQ((-4503599627370497) - doubleFixed("-4503599627370496"), doubleFixed("-1"));
-            EXPECT_EQ((-4503599627370500) - doubleFixed("-4503599627370496"), doubleFixed("-4"));
-            EXPECT_EQ((-9007199254740992) - doubleFixed("-4503599627370496"), doubleFixed("-4503599627370496"));
-            EXPECT_EQ((-9007199254740991) - doubleFixed("-4503599627370496"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((-9007199254740990) - doubleFixed("-4503599627370495"), doubleFixed("-4503599627370495"));
-            EXPECT_EQ((-9007199254740989) - doubleFixed("-4503599627370494"), doubleFixed("-4503599627370495"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhsCustomMaxed) {
-            #if DEBUGGING
-            EXPECT_DEATH((-10) - (FixedPoint<int8,7, true>("0")), ".*");
-            EXPECT_DEATH((-11) - (FixedPoint<int8,7, true>("0")), ".*");
-            EXPECT_DEATH((-2) - (FixedPoint<int8,7, true>("-0.9")), ".*");
-            EXPECT_DEATH((-5) - (FixedPoint<int8,7, true>("-0.9")), ".*");
-
-            // Issue with representation of -1
-            LOG("WOW: " << int((FixedPoint<int8,7, true>("-1")).getData()));
-            EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("0")), (FixedPoint<int8,7, true>("-1")));
-            EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.78125")), (FixedPoint<int8,7, true>("-0.21875")));
-            EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.5")), (FixedPoint<int8,7, true>("-0.5")));
-            EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.0078125")), (FixedPoint<int8,7, true>("-0.9921875")));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterUnsignedNegativeRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("4.3")), ".*");
-            EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("234234.3")), ".*");
-            EXPECT_DEATH((-4194604) - (FixedPoint<uint32, 10, true>("0")), ".*");
-            EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("0")), ".*");
-
-            EXPECT_EQ((4194303) - (FixedPoint<uint32, 10, true>("0")), (FixedPoint<uint32, 10, true>("4194303")));
-            EXPECT_EQ((4194303) - (FixedPoint<uint32, 10, true>("3000")), (FixedPoint<uint32, 10, true>("4191303")));
-            EXPECT_EQ((853982) - (FixedPoint<uint32, 10, true>("853981.5")), (FixedPoint<uint32, 10, true>("0.5")));
-            EXPECT_EQ((2) - (FixedPoint<uint32, 10, true>("1.25")), (FixedPoint<uint32, 10, true>("0.75")));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_EQ((fixed("0.99609375") + static_cast<int32>(8388607)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("1.99609375") + static_cast<int64>(8388606)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388607.99609375") + static_cast<uint32>(0)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388606.99609375") + static_cast<uint64>(1)), fixed("8388607.99609375"));
             
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionLesserThanBoundRhs) {
-            #if DEBUGGING
-            EXPECT_DEATH(8388609 - fixed("-1"), ".*");
-            EXPECT_DEATH(8388610 - fixed("-4"), ".*");
-            EXPECT_DEATH(8388609 - fixed("-12312"), ".*");
-            EXPECT_DEATH(8388610 - fixed("-422"), ".*");
-
-            EXPECT_DEATH(8388609 - fixed("0"), ".*");
-            EXPECT_DEATH(8388610 - fixed("0"), ".*");
-            EXPECT_DEATH(8388609 - fixed("0"), ".*");
-            EXPECT_DEATH(8388610 - fixed("0"), ".*");
-
-            EXPECT_DEATH(8388611 - fixed("2"), ".*");
-            EXPECT_DEATH(8388610 - fixed("1"), ".*");
-            EXPECT_EQ(8388610 - fixed("3"), fixed("8388607"));
-            EXPECT_EQ(8388611 - fixed("4"), fixed("8388607"));
-
-            EXPECT_EQ(8388609 - fixed("8388607"), fixed("2"));
-            EXPECT_EQ(8388610 - fixed("8388607"), fixed("3"));
-            EXPECT_EQ(8388608 - fixed("8300000"), fixed("88608"));
-
-            EXPECT_DEATH(996777215 - fixed("838000"), ".*");
-            EXPECT_DEATH(16777215 - fixed("8388606"), ".*");
-            EXPECT_DEATH(16777216 - fixed("8388607"), ".*");
-            EXPECT_EQ(16777214 - fixed("8388607"), fixed("8388607"));
-            EXPECT_EQ(16777213 - fixed("8388606"), fixed("8388607"));
-            EXPECT_EQ(16777212 - fixed("8388605"), fixed("8388607"));
-            #endif
-            EXPECT_TRUE(true);
-        }
+                EXPECT_EQ((fixed("0") + static_cast<int32>(8388607)), fixed("8388607"));
+                EXPECT_EQ((fixed("1") + static_cast<int64>(8388606)), fixed("8388607"));
+                EXPECT_EQ((fixed("8388607") + static_cast<uint32>(0)), fixed("8388607"));
+                EXPECT_EQ((fixed("8388606") + static_cast<uint64>(1)), fixed("8388607"));
             
-        TEST(FixedPointArithmetic, IntegerInverseSubtractionLesserThanBoundsRhsDouble) {
-            #if DEBUGGING
-            EXPECT_DEATH(4503599627370500 - doubleFixed("-0"), ".*");
-            EXPECT_DEATH(4503599627370497 - doubleFixed("-1"), ".*");
-            EXPECT_DEATH(4503599627370498 - doubleFixed("-4"), ".*");
-            EXPECT_DEATH(4503599627370530 - doubleFixed("-12312"), ".*");
-            EXPECT_DEATH(4503599627370496 - doubleFixed("-422"), ".*");
+                EXPECT_DEATH(fixed("-1") + static_cast<int32>(-8388608), ".*");
+                EXPECT_DEATH(fixed("-2") + static_cast<int64>(-8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607") + static_cast<int32>(-2), ".*");
+                EXPECT_DEATH(fixed("-8388606") + static_cast<int32>(-3), ".*");
+            
+                EXPECT_DEATH(fixed("-0.00390625") + static_cast<int32>(-8388608), ".*");
+                EXPECT_DEATH(fixed("-1.00390625") + static_cast<int64>(-8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607.00390625") + static_cast<int32>(-2), ".*");
+                EXPECT_DEATH(fixed("-8388606.00390625") + static_cast<int32>(-3), ".*");
+            
+                EXPECT_EQ((fixed("-0.99609375") + static_cast<int32>(-8388607)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-1.99609375") + static_cast<int64>(-8388606)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388606.99609375") + static_cast<int32>(-1)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388605.99609375") + static_cast<int32>(-2)), fixed("-8388607.99609375"));
+            
+                EXPECT_EQ((fixed("-0") + static_cast<int32>(-8388608)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-1") + static_cast<int64>(-8388607)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-2") + static_cast<int32>(-8388606)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388607") + static_cast<int32>(-1)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388606") + static_cast<int32>(-2)), fixed("-8388608"));
+            
+                EXPECT_EQ((fixed("1") + static_cast<int64>(-8388607)), fixed("-8388606"));
+                EXPECT_EQ((fixed("3") + static_cast<int32>(-8388607)), fixed("-8388604"));
+                EXPECT_EQ((fixed("-8388607") + static_cast<uint32>(1)), fixed("-8388606"));
+                EXPECT_EQ((fixed("-8388607") + static_cast<int32>(3)), fixed("-8388604"));
+            
+                EXPECT_EQ((fixed("-8388608") + static_cast<int64>(8388607)), fixed("-1"));
+                EXPECT_EQ((fixed("8388607") + static_cast<int32>(-8388608)), fixed("-1"));
+                #endif 
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionInBoundsRhsDouble_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("-3") + static_cast<int64>(-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("2") + static_cast<int64>(4503599627370494), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") + static_cast<uint32>(2), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370493") + static_cast<uint64>(3), ".*");
+            
+                EXPECT_EQ((doubleFixed("0.99951171875") + static_cast<int64>(4503599627370495)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("1.99951171875") + static_cast<int64>(4503599627370494)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370495.99951171875") + static_cast<uint32>(0)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370494.99951171875") + static_cast<uint64>(1)), doubleFixed("4503599627370495.99951171875"));
+            
+                EXPECT_EQ((doubleFixed("0") + static_cast<int64>(4503599627370495)), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("1") + static_cast<int64>(4503599627370494)), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370495") + static_cast<uint32>(0)), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370494") + static_cast<uint64>(1)), doubleFixed("4503599627370495"));
+            
+                EXPECT_DEATH(doubleFixed("-1") + static_cast<int64>(-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-2") + static_cast<int64>(-4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") + static_cast<int32>(-1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") + static_cast<int32>(-2), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494") + static_cast<int32>(-3), ".*");
+            
+                EXPECT_DEATH(doubleFixed("-0.00048828125") + static_cast<int64>(-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-1.00048828125") + static_cast<int64>(-4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") + static_cast<int32>(-1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") + static_cast<int32>(-2), ".*");
+            
+                EXPECT_EQ((doubleFixed("-0.99951171875") + static_cast<int64>(-4503599627370495)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-1.99951171875") + static_cast<int64>(-4503599627370494)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") + static_cast<int32>(-1)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") + static_cast<int32>(-2)), doubleFixed("-4503599627370495.99951171875"));
+            
+                EXPECT_EQ((doubleFixed("0") + static_cast<int64>(-4503599627370496)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-2") + static_cast<int64>(-4503599627370494)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-3") + static_cast<int64>(-4503599627370493)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370494") + static_cast<int32>(-2)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370493") + static_cast<int32>(-3)), doubleFixed("-4503599627370496"));
+            
+                EXPECT_EQ((doubleFixed("1") + static_cast<int64>(-4503599627370495)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("2") + static_cast<int64>(-4503599627370492)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370495") + static_cast<int32>(1)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") + static_cast<int32>(2)), doubleFixed("-4503599627370490"));
+            
+                EXPECT_EQ((doubleFixed("1") + static_cast<int64>(-4503599627370496)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("2") + static_cast<int64>(-4503599627370492)), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370496") + static_cast<int32>(1)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") + static_cast<int32>(2)), doubleFixed("-4503599627370490"));
+            
+                EXPECT_EQ((doubleFixed("-1") + static_cast<int64>(4503599627370495)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("-2") + static_cast<int64>(4503599627370492)), doubleFixed("4503599627370490"));
+                EXPECT_EQ((doubleFixed("4503599627370495") + static_cast<int32>(-1)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("4503599627370492") + static_cast<int32>(-2)), doubleFixed("4503599627370490"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhs_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("0") + static_cast<int32>(8388608), ".*");
+                EXPECT_DEATH(fixed("1") + static_cast<int64>(8388609), ".*");
+                EXPECT_DEATH(fixed("4") + static_cast<uint32>(8388610), ".*");
+                EXPECT_DEATH(fixed("12312") + static_cast<uint32>(8388609), ".*");
+                EXPECT_DEATH(fixed("422") + static_cast<int32>(8388610), ".*");
+            
+                EXPECT_DEATH(fixed("0") + static_cast<int64>(8388609), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<uint32>(8388610), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<uint32>(8388609), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<int32>(8388610), ".*");
+            
+                EXPECT_DEATH(fixed("-1") + static_cast<int64>(8388609), ".*");
+                EXPECT_DEATH(fixed("-2") + static_cast<uint32>(8388610), ".*");
+                EXPECT_EQ(fixed("-1") + static_cast<uint32>(8388608), fixed("8388607"));
+                EXPECT_EQ(fixed("-2") + static_cast<int32>(8388608), fixed("8388606"));
+                EXPECT_EQ(fixed("-3") + static_cast<int64>(8388610), fixed("8388607"));
+            
+                EXPECT_EQ(fixed("-8388607") + static_cast<uint32>(8388609), fixed("2"));
+                EXPECT_EQ(fixed("-8388607") + static_cast<uint32>(8388610), fixed("3"));
+                EXPECT_EQ(fixed("-8300000") + static_cast<int32>(8388608), fixed("88608"));
+            
+                EXPECT_DEATH(fixed("-8388606") + static_cast<int32>(2147483647), ".*");
+                EXPECT_DEATH(fixed("-8388606") + static_cast<uint32>(16777214), ".*");
+                EXPECT_DEATH(fixed("-8388607") + static_cast<uint32>(16777215), ".*");
+                EXPECT_EQ(fixed("-8388607") + static_cast<int32>(16777214), fixed("8388607"));
+                EXPECT_EQ(fixed("-8388606") + static_cast<int64>(16777213), fixed("8388607"));
+                EXPECT_EQ(fixed("-8388605") + static_cast<uint32>(16777212), fixed("8388607"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsDouble_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("1") + static_cast<int64>(4503599627370497), ".*");
+
+                EXPECT_DEATH(doubleFixed("4") + static_cast<uint64>(4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("12312") + static_cast<uint64>(4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("422") + static_cast<int64>(4503599627370496), ".*");
+            
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("0") + static_cast<uint64>(4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(4503599627370496), ".*");
+            
+                EXPECT_DEATH(doubleFixed("-1") + static_cast<int64>(4503599627370530), ".*");
+                EXPECT_EQ(doubleFixed("-1") + static_cast<uint64>(4503599627370496), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-2") + static_cast<int64>(4503599627370496), doubleFixed("4503599627370494"));
+                EXPECT_EQ(doubleFixed("-3") + static_cast<int64>(4503599627370498), doubleFixed("4503599627370495"));
+            
+                EXPECT_EQ(doubleFixed("-4503599627370496") + static_cast<uint64>(4503599627370496), doubleFixed("0"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") + static_cast<uint64>(4503599627370496), doubleFixed("1"));
+                EXPECT_EQ(doubleFixed("-4503599627370400") + static_cast<int64>(4503599627370496), doubleFixed("96"));
+
+                EXPECT_DEATH(doubleFixed("-4503599627370496") + static_cast<uint64>(9007199254740992), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") + static_cast<uint64>(9007199254740991), ".*");
+                EXPECT_EQ(doubleFixed("-4503599627370496") + static_cast<int64>(9007199254740991), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") + static_cast<int64>(9007199254740990), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370494") + static_cast<int64>(9007199254740989), doubleFixed("4503599627370495"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionGreaterThanBoundsRhsCustomMaxed_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + static_cast<int32>(10)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + static_cast<int64>(11)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") + static_cast<uint32>(1)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + static_cast<uint32>(2)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") + static_cast<int32>(5)), ".*");
+            
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.78125") + static_cast<int32>(1)), (FixedPoint<int8,7, true>("0.21875")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.5") + static_cast<uint8>(1)), (FixedPoint<int8,7, true>("0.5")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.0078125") + static_cast<int32>(1)), (FixedPoint<int8,7, true>("0.9921875")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerGreaterUnsignedNegativeRhs_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") + static_cast<int32>(4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") + static_cast<int64>(4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<uint32>(4194604)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<uint32>(4194304)), ".*");
+            
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(4194303)), (FixedPoint<uint32, 10, true>("4194303")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundRhs_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("-1") + static_cast<int32>(-8388609), ".*");
+                EXPECT_DEATH(fixed("-4") + static_cast<int64>(-8388610), ".*");
+                EXPECT_DEATH(fixed("-12312") + static_cast<int32>(-8388609), ".*");
+                EXPECT_DEATH(fixed("-422") + static_cast<int32>(-8388610), ".*");
+            
+                EXPECT_DEATH(fixed("0") + static_cast<int32>(-8388609), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<int64>(-8388610), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<int32>(-8388609), ".*");
+                EXPECT_DEATH(fixed("0") + static_cast<int32>(-8388610), ".*");
+            
+                EXPECT_DEATH(fixed("2") + static_cast<int32>(-8388611), ".*");
+                EXPECT_DEATH(fixed("1") + static_cast<int64>(-8388610), ".*");
+                EXPECT_EQ(fixed("2") + static_cast<int32>(-8388610), fixed("-8388608"));
+                EXPECT_EQ(fixed("3") + static_cast<int32>(-8388611), fixed("-8388608"));
+            
+                EXPECT_EQ(fixed("8388607") + static_cast<int32>(-8388609), fixed("-2"));
+                EXPECT_EQ(fixed("8388607") + static_cast<int64>(-8388610), fixed("-3"));
+                EXPECT_EQ(fixed("8300000") + static_cast<int32>(-8388608), fixed("-88608"));
+            
+                EXPECT_DEATH(fixed("838000") + static_cast<int64>(-996777215), ".*");
+                EXPECT_DEATH(fixed("8388606") + static_cast<int32>(-16777215), ".*");
+                EXPECT_DEATH(fixed("8388607") + static_cast<int64>(-16777216), ".*");
+                EXPECT_EQ(fixed("8388607") + static_cast<int32>(-16777215), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388606") + static_cast<int32>(-16777214), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388605") + static_cast<int32>(-16777213), fixed("-8388608"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionLesserThanBoundsRhsDouble_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("-0") + static_cast<int64>(-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("-1") + static_cast<int64>(-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("-4") + static_cast<int64>(-4503599627370498), ".*");
+                EXPECT_DEATH(doubleFixed("-12312") + static_cast<int64>(-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("-422") + static_cast<int64>(-4503599627370496), ".*");
+            
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("0") + static_cast<int64>(-4503599627370498), ".*");
+            
+                EXPECT_DEATH(doubleFixed("1") + static_cast<int64>(-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("2") + static_cast<int64>(-4503599627370499), ".*");
+                EXPECT_EQ(doubleFixed("1") + static_cast<int64>(-4503599627370496), doubleFixed("-4503599627370495"));
+                EXPECT_EQ(doubleFixed("2") + static_cast<int64>(-4503599627370496), doubleFixed("-4503599627370494"));
+                EXPECT_EQ(doubleFixed("3") + static_cast<int64>(-4503599627370498), doubleFixed("-4503599627370495"));
+            
+                EXPECT_EQ(doubleFixed("4503599627370495") + static_cast<int64>(-4503599627370496), doubleFixed("-1"));
+                EXPECT_EQ(doubleFixed("4503599627370494") + static_cast<int64>(-4503599627370496), doubleFixed("-2"));
+                EXPECT_EQ(doubleFixed("4503599627370400") + static_cast<int64>(-4503599627370496), doubleFixed("-96"));
+            
+                EXPECT_DEATH(doubleFixed("4503599627370495") + static_cast<int64>(-9007199254740992), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370495") + static_cast<int64>(-9007199254740993), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") + static_cast<int64>(-9007199254740993), ".*");
+                EXPECT_EQ(doubleFixed("4503599627370495") + static_cast<int64>(-9007199254740991), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370494") + static_cast<int64>(-9007199254740990), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370493") + static_cast<int64>(-9007199254740989), doubleFixed("-4503599627370496"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerAdditionLesserUnsignedNegativeRhs_DifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") + static_cast<int32>(-5)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(-1)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(-1)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(-32768)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(-128)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") + static_cast<int32>(-2)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") + static_cast<int32>(-32768)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") + static_cast<int32>(-128)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") + static_cast<int32>(-156)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") + static_cast<int32>(-157)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("127") + static_cast<int32>(-128)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("32767") + static_cast<int32>(-32768)), ".*");
+            
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(-0)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") + static_cast<int32>(1)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") + static_cast<int32>(-1)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") + static_cast<int32>(-0)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") + static_cast<int32>(-155)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") + static_cast<int32>(-154)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32768") + static_cast<int32>(-32768)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32768") + static_cast<int64>(-32767)), (FixedPoint<uint32, 10, true>("1")));
+                #endif
+            
+                EXPECT_TRUE(true);
+            }
+        #pragma endregion
         
-            EXPECT_DEATH(4503599627370497 - doubleFixed("0"), ".*");
-            EXPECT_DEATH(4503599627370500 - doubleFixed("0"), ".*");
-            EXPECT_DEATH(4503599627370530 - doubleFixed("0"), ".*");
-            EXPECT_DEATH(4503599627370498 - doubleFixed("0"), ".*");
-        
-            EXPECT_DEATH(4503599627370530 - doubleFixed("1"), ".*");
-            EXPECT_DEATH(4503599627370499 - doubleFixed("2"), ".*");
-            EXPECT_EQ(4503599627370496 - doubleFixed("1"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(4503599627370496 - doubleFixed("2"), doubleFixed("4503599627370494"));
-            EXPECT_EQ(4503599627370498 - doubleFixed("3"), doubleFixed("4503599627370495"));
-        
-            EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370495"), doubleFixed("1"));
-            EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370494"), doubleFixed("2"));
-            EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370400"), doubleFixed("96"));
-        
-            EXPECT_DEATH(900713499254740995 - doubleFixed("4503599627370493"), ".*");
-            EXPECT_DEATH(9007199254740994 - doubleFixed("4503599627370494"), ".*");
-            EXPECT_DEATH(9007199254740993 - doubleFixed("4503599627370495"), ".*");
-            EXPECT_EQ(9007199254740990 - doubleFixed("4503599627370495"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(9007199254740989 - doubleFixed("4503599627370494"), doubleFixed("4503599627370495"));
-            EXPECT_EQ(9007199254740988 - doubleFixed("4503599627370493"), doubleFixed("4503599627370495"));
-            #endif
-            EXPECT_TRUE(true);
-        }
-        
-        TEST(FixedPointArithmetic, IntegerInverseLesserUnsignedNegativeRhs) {
+        // We don't need to test inverse direction of addition as that part is handled with the same logic
+
+        #pragma region Subtraction
+            TEST(FixedPointArithmetic, IntegerSubtractionFarOutbounds) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("123.13123123") - (-1231231232), ".*");
+                EXPECT_DEATH(fixed("321211") - 1231231232, ".*");
+                EXPECT_DEATH(fixed("4") - 1231231232, ".*");
+                EXPECT_DEATH(fixed("-424") - (-1231231232), ".*");
+                EXPECT_DEATH(fixed("-424") - (-1231231232), ".*");
+
+                EXPECT_DEATH(doubleFixed("123.13123123") - 9223423431231232, ".*");
+                EXPECT_DEATH(doubleFixed("3211.234234") - 6223423431231232, ".*");
+                EXPECT_DEATH(doubleFixed("4.234234") - (-5423232324234234234), ".*");
+                EXPECT_DEATH(doubleFixed("-424.234234234") - (-9223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("-424.234") - (-9223423431231232), ".*");
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionOverflow) {
+                EXPECT_EQ(radian("1.1231231") - (-4), radian("1.1231231"));
+                EXPECT_EQ(radian("0.8946522") - (-5), radian("1.8946522"));
+                EXPECT_EQ(radian("1.43983412") - (-1), radian("0.43983412"));
+                EXPECT_EQ(radian("1.235554") - (-1), radian("0.235554"));
+                EXPECT_EQ(radian("1.235554") - (-325490234902), radian("1.235554"));
+                EXPECT_EQ(radian("1.235554") - (-3255), radian("0.235554"));
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("0") - (-8388608), ".*");
+                EXPECT_DEATH(fixed("1") - (-8388607), ".*");
+                EXPECT_DEATH(fixed("2") - (-8388606), ".*");
+                EXPECT_DEATH(fixed("8388607") - (-1), ".*");
+                EXPECT_DEATH(fixed("8388606") - (-2), ".*");
+
+                EXPECT_EQ(fixed("-1") - (-8388608), fixed("8388607"));
+                EXPECT_EQ(fixed("-2") - (-8388608), fixed("8388606"));
+
+                EXPECT_EQ((fixed("0.99609375") - (-8388607)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("1.99609375") - (-8388606)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388607.99609375") - 0), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388606.99609375") - (-1)), fixed("8388607.99609375"));
+
+                EXPECT_EQ((fixed("0") - (-8388607)), fixed("8388607"));
+                EXPECT_EQ((fixed("1") - (-8388606)), fixed("8388607"));
+                EXPECT_EQ((fixed("8388607") - 0), fixed("8388607"));
+                EXPECT_EQ((fixed("8388606") - (-1)), fixed("8388607"));
+
+                EXPECT_DEATH(fixed("-1") - 8388608, ".*");
+                EXPECT_DEATH(fixed("-2") - 8388607, ".*");
+                EXPECT_DEATH(fixed("-8388607") - 2, ".*");
+                EXPECT_DEATH(fixed("-8388606") - 3, ".*");
+
+                EXPECT_DEATH(fixed("-0.00390625") - 8388608, ".*");
+                EXPECT_DEATH(fixed("-1.00390625") - 8388607, ".*");
+                EXPECT_DEATH(fixed("-8388607.00390625") - 2, ".*");
+                EXPECT_DEATH(fixed("-8388606.00390625") - 3, ".*");
+
+                EXPECT_EQ((fixed("-0.99609375") - 8388607), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-1.99609375") - 8388606), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388606.99609375") - 1), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388605.99609375") - 2), fixed("-8388607.99609375"));
+
+                EXPECT_EQ((fixed("-0") - 8388608), fixed("-8388608"));
+                EXPECT_EQ((fixed("-1") - 8388607), fixed("-8388608"));
+                EXPECT_EQ((fixed("-2") - 8388606), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388607") - 1), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388606") - 2), fixed("-8388608"));
+
+                EXPECT_EQ((fixed("1") - 8388607), fixed("-8388606"));
+                EXPECT_EQ((fixed("3") - 8388607), fixed("-8388604"));
+                EXPECT_EQ((fixed("-8388607") - (-1)), fixed("-8388606"));
+                EXPECT_EQ((fixed("-8388607") - (-3)), fixed("-8388604"));
+
+                EXPECT_EQ((fixed("-8388608") - (-8388607)), fixed("-1"));
+                EXPECT_EQ((fixed("8388607") - 8388608), fixed("-1"));
+                #endif 
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("422") - (-4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("1") - (-4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("2") - (-4503599627370494), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") - (-2), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370493") - (-3), ".*");
+                EXPECT_DEATH(doubleFixed("0") - (-4503599627370496), ".*");
+
+                EXPECT_EQ((doubleFixed("0.99951171875") - (-4503599627370495)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("1.99951171875") - (-4503599627370494)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370495.99951171875") - 0), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370494.99951171875") - (-1)), doubleFixed("4503599627370495.99951171875"));
+
+                EXPECT_EQ((doubleFixed("0") - (-4503599627370495)), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("1") - (-4503599627370494)), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370495") - 0), doubleFixed("4503599627370495"));
+                EXPECT_EQ((doubleFixed("4503599627370494") - (-1)), doubleFixed("4503599627370495"));
+
+                EXPECT_DEATH(doubleFixed("-1") - 4503599627370496, ".*");
+                EXPECT_DEATH(doubleFixed("-2") - 4503599627370495, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") - 1, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") - 2, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494") - 3, ".*");
+
+                EXPECT_DEATH(doubleFixed("-0.00048828125") - 4503599627370496, ".*");
+                EXPECT_DEATH(doubleFixed("-1.00048828125") - 4503599627370495, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") - 1, ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") - 2, ".*");
+
+                EXPECT_EQ((doubleFixed("-0.99951171875") - 4503599627370495), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-1.99951171875") - 4503599627370494), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") - 1), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") - 2), doubleFixed("-4503599627370495.99951171875"));
+
+                EXPECT_EQ((doubleFixed("0") - 4503599627370496), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-2") - 4503599627370494), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-3") - 4503599627370493), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370494") - 2), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370493") - 3), doubleFixed("-4503599627370496"));
+
+                EXPECT_DEATH(doubleFixed("-2251799813685249") + -2251799813685248, ".*");
+                EXPECT_DEATH(doubleFixed("-2251799813685248") + -2251799813685249, ".*");
+
+                EXPECT_EQ(doubleFixed("-2251799813685248") + -2251799813685248, doubleFixed("-4503599627370496"));
+
+                EXPECT_DEATH(doubleFixed("-3377699720527872") + -1125899906842625, ".*");
+                EXPECT_DEATH(doubleFixed("-3377699720527873") + -1125899906842624, ".*");
+                EXPECT_DEATH(doubleFixed("-1125899906842624") + -3377699720527873, ".*");
+                EXPECT_DEATH(doubleFixed("-1125899906842625") + -3377699720527872, ".*");
+
+                EXPECT_EQ(doubleFixed("-3377699720527872") + -1125899906842624, doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("-1125899906842624") + -3377699720527872, doubleFixed("-4503599627370496"));
+
+                EXPECT_EQ((doubleFixed("1") - 4503599627370495), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("2") - 4503599627370492), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370495") - (-1)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") - (-2)), doubleFixed("-4503599627370490"));
+
+                EXPECT_EQ((doubleFixed("1") - 4503599627370496), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("2") - 4503599627370492), doubleFixed("-4503599627370490"));
+                EXPECT_EQ((doubleFixed("-4503599627370496") - (-1)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("-4503599627370492") - (-2)), doubleFixed("-4503599627370490"));
+
+                EXPECT_EQ((doubleFixed("-1") - (-4503599627370495)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("-2") - (-4503599627370492)), doubleFixed("4503599627370490"));
+                EXPECT_EQ((doubleFixed("4503599627370495") - 1), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("4503599627370492") - 2), doubleFixed("4503599627370490"));
+
+                EXPECT_EQ(doubleFixed("-1") - (-4503599627370496), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-2") - (-4503599627370496), doubleFixed("4503599627370494"));
+
+                EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370496), doubleFixed("0"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") - (-4503599627370496), doubleFixed("1"));
+                EXPECT_EQ(doubleFixed("-4503599627370400") - (-4503599627370496), doubleFixed("96"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("1") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("4") - (-8388610), ".*");
+                EXPECT_DEATH(fixed("12312") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("422") - (-8388610), ".*");
+
+                EXPECT_DEATH(fixed("0") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("0") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("0") - (-8388610), ".*");
+                EXPECT_DEATH(fixed("0") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("0") - (-8388610), ".*");
+
+                EXPECT_DEATH(fixed("-1") - (-8388609), ".*");
+                EXPECT_DEATH(fixed("-2") - (-8388610), ".*");
+                EXPECT_EQ(fixed("-3") - (-8388610), fixed("8388607"));
+
+                EXPECT_EQ(fixed("-8388607") - (-8388609), fixed("2"));
+                EXPECT_EQ(fixed("-8388607") - (-8388610), fixed("3"));
+                EXPECT_EQ(fixed("-8300000") - (-8388608), fixed("88608"));
+
+                EXPECT_DEATH(fixed("-8388606") - (-1621777214), ".*");
+                EXPECT_DEATH(fixed("-8388606") - (-16777214), ".*");
+                EXPECT_DEATH(fixed("-8388607") - (-16777215), ".*");
+                EXPECT_EQ(fixed("-8388607") - (-16777214), fixed("8388607"));
+                EXPECT_EQ(fixed("-8388606") - (-16777213), fixed("8388607"));
+                EXPECT_EQ(fixed("-8388605") - (-16777212), fixed("8388607"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("0") - (-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("1") - (-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("4") - (-4503599627370498), ".*");
+                EXPECT_DEATH(doubleFixed("12312") - (-4503599627370530), ".*");
+
+                EXPECT_DEATH(doubleFixed("0") - (-4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("0") - (-4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("0") - (-4503599627370530), ".*");
+
+                EXPECT_DEATH(doubleFixed("-1") - (-4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("-2") - (-4503599627370498), ".*");
+                EXPECT_EQ(doubleFixed("-3") - (-4503599627370498), doubleFixed("4503599627370495"));
+
+                EXPECT_DEATH(doubleFixed("-4503599627370496") - (-900713499254740991), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") - (-9007199254740992), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") - (-9007199254740991), ".*");
+                EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370497), doubleFixed("1"));
+                EXPECT_EQ(doubleFixed("-4503599627370496") - (-4503599627370500), doubleFixed("4"));
+                EXPECT_EQ(doubleFixed("-4503599627370496") - (-9007199254740991), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370495") - (-9007199254740990), doubleFixed("4503599627370495"));
+                EXPECT_EQ(doubleFixed("-4503599627370494") - (-9007199254740989), doubleFixed("4503599627370495"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionGreaterThanBoundsRhsCustomMaxed) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-10)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-11)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("0") - (-1)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") - (-2)), ".*");
+                EXPECT_DEATH((FixedPoint<int8,7, true>("-0.9") - (-5)), ".*");
+
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.78125") - (-1)), (FixedPoint<int8,7, true>("0.21875")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.5") - (-1)), (FixedPoint<int8,7, true>("0.5")));
+                EXPECT_EQ((FixedPoint<int8,7, true>("-0.0078125") - (-1)), (FixedPoint<int8,7, true>("0.9921875")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionGreaterUnsignedNegativeRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - (-4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") - (-4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (-4194604)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (-4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - (-4194303)), ".*");
+
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - (-4194303)), (FixedPoint<uint32, 10, true>("4194303")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+             
+            TEST(FixedPointArithmetic, IntegerSubtractionOutBoundsRhsUnsigned) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - (4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("234234.3") - (4194305)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (4194304)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - (9194304)), ".*");
+
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("4194303") - (4194303)), (FixedPoint<uint32, 10, true>("0")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("-1") - 8388609, ".*");
+                EXPECT_DEATH(fixed("-4") - 8388610, ".*");
+                EXPECT_DEATH(fixed("-12312") - 8388609, ".*");
+                EXPECT_DEATH(fixed("-422") - 8388610, ".*");
+
+                EXPECT_DEATH(fixed("0") - 8388609, ".*");
+                EXPECT_DEATH(fixed("0") - 8388610, ".*");
+                EXPECT_DEATH(fixed("0") - 8388609, ".*");
+                EXPECT_DEATH(fixed("0") - 8388610, ".*");
+
+                EXPECT_DEATH(fixed("2") - 8388611, ".*");
+                EXPECT_DEATH(fixed("1") - 8388610, ".*");
+                EXPECT_EQ(fixed("2") - 8388610, fixed("-8388608"));
+                EXPECT_EQ(fixed("3") - 8388611, fixed("-8388608"));
+
+                EXPECT_EQ(fixed("8388607") - 8388609, fixed("-2"));
+                EXPECT_EQ(fixed("8388607") - 8388610, fixed("-3"));
+                EXPECT_EQ(fixed("8300000") - 8388608, fixed("-88608"));
+
+                EXPECT_DEATH(fixed("838000") - 996777215, ".*");
+                EXPECT_DEATH(fixed("8388606") - 16777215, ".*");
+                EXPECT_DEATH(fixed("8388607") - 16777216, ".*");
+                EXPECT_EQ(fixed("8388607") - 16777215, fixed("-8388608"));
+                EXPECT_EQ(fixed("8388606") - 16777214, fixed("-8388608"));
+                EXPECT_EQ(fixed("8388605") - 16777213, fixed("-8388608"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+                
+            TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("-0") - 4503599627370500, ".*");
+                EXPECT_DEATH(doubleFixed("-1") - 4503599627370497, ".*");
+                EXPECT_DEATH(doubleFixed("-4") - 4503599627370498, ".*");
+                EXPECT_DEATH(doubleFixed("-12312") - 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("-422") - 4503599627370496, ".*");
+
+                EXPECT_DEATH(doubleFixed("0") - 4503599627370497, ".*");
+                EXPECT_DEATH(doubleFixed("0") - 4503599627370500, ".*");
+                EXPECT_DEATH(doubleFixed("0") - 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("0") - 4503599627370498, ".*");
+
+                EXPECT_DEATH(doubleFixed("1") - 4503599627370530, ".*");
+                EXPECT_DEATH(doubleFixed("2") - 4503599627370499, ".*");
+                EXPECT_EQ(doubleFixed("1") - 4503599627370496, doubleFixed("-4503599627370495"));
+                EXPECT_EQ(doubleFixed("2") - 4503599627370496, doubleFixed("-4503599627370494"));
+                EXPECT_EQ(doubleFixed("3") - 4503599627370498, doubleFixed("-4503599627370495"));
+
+                EXPECT_EQ(doubleFixed("4503599627370495") - 4503599627370496, doubleFixed("-1"));
+                EXPECT_EQ(doubleFixed("4503599627370494") - 4503599627370496, doubleFixed("-2"));
+                EXPECT_EQ(doubleFixed("4503599627370400") - 4503599627370496, doubleFixed("-96"));
+
+                EXPECT_DEATH(doubleFixed("4503599627370495") - 900713499254740991, ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370495") - 9007199254740992, ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") - 9007199254740991, ".*");
+                EXPECT_EQ(doubleFixed("4503599627370495") - 9007199254740991, doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370494") - 9007199254740990, doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370493") - 9007199254740989, doubleFixed("-4503599627370496"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerLesserUnsignedNegativeRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - 5), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 1), ".*");
+
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 4194604), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 4194304), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - 1), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - int16(32767)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - int8(127)), ".*");
+
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - 2), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - int16(32767)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - int8(127)), ".*");
+
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - 156), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - 157), ".*");
+
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("126") - int8(127)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("32766") - int16(32767)), ".*");
+
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - 0), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - (-1)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - 1), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - 0), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - 155), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - 154), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32767") - int16(32767)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32768") - int16(32767)), (FixedPoint<uint32, 10, true>("1")));
+                #endif
+
+                EXPECT_TRUE(true);
+            }
+
+            TEST(FixedPointArithmetic, IntegerSubtractionFarOutboundsDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("321211") - uint32(1231231232), ".*");
+                EXPECT_DEATH(fixed("4") - uint32(1231231232), ".*");
+            
+                EXPECT_DEATH(doubleFixed("123.13123123") - uint64(9223423431231232), ".*");
+                EXPECT_DEATH(doubleFixed("3211.234234") - uint64(6223423431231232), ".*");
+                #endif
+            }
+            
+            TEST(FixedPointArithmetic, IntegerSubtractionOverflowDifferentTypes) {
+                EXPECT_EQ(radian("1.1231231") - uint8(0), radian("1.1231231"));
+                EXPECT_EQ(radian("0.8946522") - uint8(0), radian("0.8946522"));
+                EXPECT_EQ(radian("1.43983412") - uint8(0), radian("1.43983412"));
+                EXPECT_EQ(radian("1.235554") - uint8(0), radian("1.235554"));
+            }
+            
+            TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhsDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_EQ((fixed("8388607.99609375") - uint8(0)), fixed("8388607.99609375"));
+                EXPECT_EQ((fixed("8388607") - uint8(0)), fixed("8388607"));
+            
+                EXPECT_DEATH(fixed("-1") - uint32(8388608), ".*");
+                EXPECT_DEATH(fixed("-2") - uint32(8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607") - uint8(2), ".*");
+                EXPECT_DEATH(fixed("-8388606") - uint8(3), ".*");
+            
+                EXPECT_DEATH(fixed("-0.00390625") - uint32(8388608), ".*");
+                EXPECT_DEATH(fixed("-1.00390625") - uint32(8388607), ".*");
+                EXPECT_DEATH(fixed("-8388607.00390625") - uint8(2), ".*");
+                EXPECT_DEATH(fixed("-8388606.00390625") - uint8(3), ".*");
+            
+                EXPECT_EQ((fixed("-0.99609375") - uint32(8388607)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-1.99609375") - uint32(8388606)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388606.99609375") - uint8(1)), fixed("-8388607.99609375"));
+                EXPECT_EQ((fixed("-8388605.99609375") - uint8(2)), fixed("-8388607.99609375"));
+            
+                EXPECT_EQ((fixed("-0") - uint32(8388608)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-1") - uint32(8388607)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-2") - uint32(8388606)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388607") - uint8(1)), fixed("-8388608"));
+                EXPECT_EQ((fixed("-8388606") - uint8(2)), fixed("-8388608"));
+            
+                EXPECT_EQ((fixed("1") - uint32(8388607)), fixed("-8388606"));
+                EXPECT_EQ((fixed("3") - uint32(8388607)), fixed("-8388604"));
+                
+                EXPECT_EQ((fixed("8388607") - uint32(8388608)), fixed("-1"));
+                #endif
+            }
+            
+            TEST(FixedPointArithmetic, IntegerSubtractionInBoundsRhsDoubleDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_EQ((doubleFixed("4503599627370495.99951171875") - uint8(0)), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("4503599627370495") - uint8(0)), doubleFixed("4503599627370495"));
+            
+                EXPECT_DEATH(doubleFixed("-1") - uint64(4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-2") - uint64(4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370496") - uint8(1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495") - uint8(2), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494") - uint8(3), ".*");
+            
+                EXPECT_DEATH(doubleFixed("-0.00048828125") - uint64(4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("-1.00048828125") - uint64(4503599627370495), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370495.00048828125") - uint8(1), ".*");
+                EXPECT_DEATH(doubleFixed("-4503599627370494.00048828125") - uint8(2), ".*");
+            
+                EXPECT_EQ((doubleFixed("-0.99951171875") - uint64(4503599627370495)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-1.99951171875") - uint64(4503599627370494)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370494.99951171875") - uint8(1)), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((doubleFixed("-4503599627370493.99951171875") - uint8(2)), doubleFixed("-4503599627370495.99951171875"));
+            
+                EXPECT_EQ((doubleFixed("0") - uint64(4503599627370496)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-2") - uint64(4503599627370494)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-3") - uint64(4503599627370493)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370494") - uint8(2)), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((doubleFixed("-4503599627370493") - uint8(3)), doubleFixed("-4503599627370496"));
+            
+                EXPECT_EQ((doubleFixed("1") - uint64(4503599627370495)), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((doubleFixed("2") - uint64(4503599627370492)), doubleFixed("-4503599627370490"));
+            
+                EXPECT_EQ((doubleFixed("1") - uint64(4503599627370496)), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((doubleFixed("2") - uint64(4503599627370492)), doubleFixed("-4503599627370490"));
+            
+                EXPECT_EQ((doubleFixed("4503599627370495") - uint8(1)), doubleFixed("4503599627370494"));
+                EXPECT_EQ((doubleFixed("4503599627370492") - uint8(2)), doubleFixed("4503599627370490"));
+                #endif
+            }
+            
+            TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundRhsDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(fixed("0") - uint32(8388609), ".*");
+                EXPECT_DEATH(fixed("0") - uint32(8388610), ".*");
+                EXPECT_DEATH(fixed("0") - uint32(8388609), ".*");
+                EXPECT_DEATH(fixed("0") - uint32(8388610), ".*");
+            
+                EXPECT_DEATH(fixed("2") - uint32(8388611), ".*");
+                EXPECT_DEATH(fixed("1") - uint32(8388610), ".*");
+                EXPECT_EQ(fixed("2") - uint32(8388610), fixed("-8388608"));
+                EXPECT_EQ(fixed("3") - uint32(8388611), fixed("-8388608"));
+            
+                EXPECT_EQ(fixed("8388607") - uint32(8388609), fixed("-2"));
+                EXPECT_EQ(fixed("8388607") - uint32(8388610), fixed("-3"));
+                EXPECT_EQ(fixed("8300000") - uint32(8388608), fixed("-88608"));
+            
+                EXPECT_DEATH(fixed("838000") - uint32(996777215), ".*");
+                EXPECT_DEATH(fixed("8388606") - uint32(16777215), ".*");
+                EXPECT_DEATH(fixed("8388607") - uint32(16777216), ".*");
+                EXPECT_EQ(fixed("8388607") - uint32(16777215), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388606") - uint32(16777214), fixed("-8388608"));
+                EXPECT_EQ(fixed("8388605") - uint32(16777213), fixed("-8388608"));
+                #endif
+            }
+                
+            TEST(FixedPointArithmetic, IntegerSubtractionLesserThanBoundsRhsDoubleDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH(doubleFixed("0") - uint64(4503599627370497), ".*");
+                EXPECT_DEATH(doubleFixed("0") - uint64(4503599627370500), ".*");
+                EXPECT_DEATH(doubleFixed("0") - uint64(4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("0") - uint64(4503599627370498), ".*");
+            
+                EXPECT_DEATH(doubleFixed("1") - uint64(4503599627370530), ".*");
+                EXPECT_DEATH(doubleFixed("2") - uint64(4503599627370499), ".*");
+                EXPECT_EQ(doubleFixed("1") - uint64(4503599627370496), doubleFixed("-4503599627370495"));
+                EXPECT_EQ(doubleFixed("2") - uint64(4503599627370496), doubleFixed("-4503599627370494"));
+                EXPECT_EQ(doubleFixed("3") - uint64(4503599627370498), doubleFixed("-4503599627370495"));
+            
+                EXPECT_EQ(doubleFixed("4503599627370495") - uint64(4503599627370496), doubleFixed("-1"));
+                EXPECT_EQ(doubleFixed("4503599627370494") - uint64(4503599627370496), doubleFixed("-2"));
+                EXPECT_EQ(doubleFixed("4503599627370400") - uint64(4503599627370496), doubleFixed("-96"));
+            
+                EXPECT_DEATH(doubleFixed("4503599627370495") - uint64(900713499254740991), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370495") - uint64(9007199254740992), ".*");
+                EXPECT_DEATH(doubleFixed("4503599627370494") - uint64(9007199254740991), ".*");
+                EXPECT_EQ(doubleFixed("4503599627370495") - uint64(9007199254740991), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370494") - uint64(9007199254740990), doubleFixed("-4503599627370496"));
+                EXPECT_EQ(doubleFixed("4503599627370493") - uint64(9007199254740989), doubleFixed("-4503599627370496"));
+                #endif
+            }
+            
+            TEST(FixedPointArithmetic, IntegerLesserUnsignedNegativeRhsDifferentTypes) {
+                #if DEBUGGING
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("4.3") - uint8(5)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - uint8(1)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - uint8(1)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - uint16(32767)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") - uint8(127)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - uint8(2)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - uint16(32767)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") - uint8(127)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - uint8(156)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("155") - uint8(157)), ".*");
+            
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("126") - uint8(127)), ".*");
+                EXPECT_DEATH((FixedPoint<uint32, 10, true>("32766") - uint16(32767)), ".*");
+            
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("0") - uint8(0)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - uint8(1)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("1") - uint8(0)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - uint8(155)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("155") - uint8(154)), (FixedPoint<uint32, 10, true>("1")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32767") - uint16(32767)), (FixedPoint<uint32, 10, true>("0")));
+                EXPECT_EQ((FixedPoint<uint32, 10, true>("32768") - uint16(32767)), (FixedPoint<uint32, 10, true>("1")));
+                #endif
+            }
+        #pragma endregion
+
+        #pragma region Inverse Subtraction
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionFarOutbounds) {
+                #if DEBUGGING
+                EXPECT_DEATH(1231231232 - fixed("123.13123123"), ".*");
+                EXPECT_DEATH((-1231231232) - fixed("321211"), ".*");
+                EXPECT_DEATH((-1231231232) - fixed("4"), ".*");
+                EXPECT_DEATH(1231231232 - fixed("-424"), ".*");
+                EXPECT_DEATH(1231231232 - fixed("-424"), ".*");
+            
+                EXPECT_DEATH((-9223423431231232) - doubleFixed("123.13123123"), ".*");
+                EXPECT_DEATH((-6223423431231232) - doubleFixed("3211.234234"), ".*");
+                EXPECT_DEATH(5423232324234234234 - doubleFixed("4.234234"), ".*");
+                EXPECT_DEATH(9223423431231232 - doubleFixed("-424.234234234"), ".*");
+                EXPECT_DEATH(9223423431231232 - doubleFixed("-424.234"), ".*");
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionOverflow) {
+                // Underflow behavior is kinda weird lmao in this case, its easier to think of the left part underflowing then the subtraction happens
+                EXPECT_EQ((-4) - radian("1.1231231"), radian("0.8768769"));
+                EXPECT_EQ((-5) - radian("0.8946522"), radian("0.1053478"));
+                EXPECT_EQ((-1) - radian("1.43983412"), radian("1.56016588"));
+                EXPECT_EQ((-1) - radian("1.21875"), radian("1.78125"));
+                EXPECT_EQ((-325490234902) - radian("1.21875"), radian("0.78125"));
+                EXPECT_EQ((-3255) - radian("1.765625"), radian("1.234375"));
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionInBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((-8388608) - fixed("1"), ".*");
+                EXPECT_DEATH((-8388607) - fixed("2"), ".*");
+                EXPECT_DEATH((-8388606) - fixed("3"), ".*");
+                EXPECT_DEATH((-2) - fixed("8388607"), ".*");
+                EXPECT_DEATH((-3) - fixed("8388606"), ".*");
+            
+                EXPECT_EQ((-8388608) - fixed("-1"), fixed("-8388607"));
+                EXPECT_EQ((-8388608) - fixed("-2"), fixed("-8388606"));
+            
+                EXPECT_EQ((-8388607) - fixed("0.99609375"), fixed("-8388607.99609375"));
+                EXPECT_EQ((-8388606) - fixed("1.99609375"), fixed("-8388607.99609375"));
+                EXPECT_EQ(0 - fixed("8388607.99609375"), fixed("-8388607.99609375"));
+                EXPECT_EQ((-1) - fixed("8388606.99609375"), fixed("-8388607.99609375"));
+            
+                EXPECT_EQ((-8388607) - fixed("0"), fixed("-8388607"));
+                EXPECT_EQ((-8388606) - fixed("1"), fixed("-8388607"));
+                EXPECT_EQ(0 - fixed("8388607"), fixed("-8388607"));
+                EXPECT_EQ((-1) - fixed("8388606"), fixed("-8388607"));
+            
+                EXPECT_DEATH(8388608 - fixed("-1"), ".*");
+                EXPECT_DEATH(8388607 - fixed("-2"), ".*");
+                EXPECT_DEATH(2 - fixed("-8388607"), ".*");
+                EXPECT_DEATH(3 - fixed("-8388606"), ".*");
+            
+                EXPECT_DEATH(8388608 - fixed("-0.00390625"), ".*");
+                EXPECT_DEATH(8388607 - fixed("-1.00390625"), ".*");
+                EXPECT_DEATH(2 - fixed("-8388607.00390625"), ".*");
+                EXPECT_DEATH(3 - fixed("-8388606.00390625"), ".*");
+            
+                EXPECT_EQ(8388607 - fixed("-0.99609375"), fixed("8388607.99609375"));
+                EXPECT_EQ(8388606 - fixed("-1.99609375"), fixed("8388607.99609375"));
+                EXPECT_EQ(1 - fixed("-8388606.99609375"), fixed("8388607.99609375"));
+                EXPECT_EQ(2 - fixed("-8388605.99609375"), fixed("8388607.99609375"));
+            
+                EXPECT_EQ(8388607 - fixed("-0"), fixed("8388607"));
+                EXPECT_EQ(8388606 - fixed("-1"), fixed("8388607"));
+                EXPECT_EQ(8388605 - fixed("-2"), fixed("8388607"));
+                EXPECT_EQ(-1 - fixed("-8388608"), fixed("8388607"));
+                EXPECT_EQ(0 - fixed("-8388607"), fixed("8388607"));
+                EXPECT_DEATH(1 - fixed("-8388607"), ".*");
+                EXPECT_DEATH(2 - fixed("-8388606"), ".*");
+            
+                EXPECT_EQ(8388607 - fixed("1"), fixed("8388606"));
+                EXPECT_EQ(8388607 - fixed("3"), fixed("8388604"));
+                EXPECT_EQ((-1) - fixed("-8388607"), fixed("8388606"));
+                EXPECT_EQ((-3) - fixed("-8388607"), fixed("8388604"));
+            
+                EXPECT_EQ((-8388607) - fixed("-8388608"), fixed("1"));
+                EXPECT_EQ(8388608 - fixed("8388607"), fixed("1"));
+                #endif 
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionInBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH((-4503599627370496) - doubleFixed("422"), ".*");
+                EXPECT_DEATH((-4503599627370495) - doubleFixed("2"), ".*");
+                EXPECT_DEATH((-4503599627370494) - doubleFixed("3"), ".*");
+                EXPECT_DEATH((-3) - doubleFixed("4503599627370494"), ".*");
+                EXPECT_DEATH((-4) - doubleFixed("4503599627370493"), ".*");
+                EXPECT_DEATH((-4503599627370497) - doubleFixed("0"), ".*");
+            
+                EXPECT_EQ((-4503599627370495) - doubleFixed("0.99951171875"), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((-4503599627370494) - doubleFixed("1.99951171875"), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ(0 - doubleFixed("4503599627370495.99951171875"), doubleFixed("-4503599627370495.99951171875"));
+                EXPECT_EQ((-1) - doubleFixed("4503599627370494.99951171875"), doubleFixed("-4503599627370495.99951171875"));
+            
+                EXPECT_EQ((-4503599627370495) - doubleFixed("0"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((-4503599627370494) - doubleFixed("1"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ(0 - doubleFixed("4503599627370495"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((-1) - doubleFixed("4503599627370494"), doubleFixed("-4503599627370495"));
+            
+                EXPECT_DEATH(4503599627370496 - doubleFixed("-1"), ".*");
+                EXPECT_DEATH(4503599627370495 - doubleFixed("-2"), ".*");
+                EXPECT_DEATH(1 - doubleFixed("-4503599627370496"), ".*");
+                EXPECT_DEATH(2 - doubleFixed("-4503599627370495"), ".*");
+                EXPECT_DEATH(3 - doubleFixed("-4503599627370494"), ".*");
+            
+                EXPECT_DEATH(4503599627370496 - doubleFixed("-0.00048828125"), ".*");
+                EXPECT_DEATH(4503599627370495 - doubleFixed("-1.00048828125"), ".*");
+                EXPECT_DEATH(1 - doubleFixed("-4503599627370495.00048828125"), ".*");
+                EXPECT_DEATH(2 - doubleFixed("-4503599627370494.00048828125"), ".*");
+            
+                EXPECT_EQ(4503599627370495 - doubleFixed("-0.99951171875"), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ(4503599627370494 - doubleFixed("-1.99951171875"), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ(1 - doubleFixed("-4503599627370494.99951171875"), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ(2 - doubleFixed("-4503599627370493.99951171875"), doubleFixed("4503599627370495.99951171875"));
+            
+                EXPECT_EQ(4503599627370495 - doubleFixed("0"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(4503599627370493 - doubleFixed("-2"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(4503599627370492 - doubleFixed("-3"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(1 - doubleFixed("-4503599627370494"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(2 - doubleFixed("-4503599627370493"), doubleFixed("4503599627370495"));
+            
+                EXPECT_EQ(4503599627370495 - doubleFixed("1"), doubleFixed("4503599627370494"));
+                EXPECT_EQ(4503599627370492 - doubleFixed("2"), doubleFixed("4503599627370490"));
+                EXPECT_EQ((-1) - doubleFixed("-4503599627370495"), doubleFixed("4503599627370494"));
+                EXPECT_EQ((-2) - doubleFixed("-4503599627370492"), doubleFixed("4503599627370490"));
+            
+                EXPECT_EQ(4503599627370496 - doubleFixed("1"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(4503599627370492 - doubleFixed("2"), doubleFixed("4503599627370490"));
+                EXPECT_EQ((-1) - doubleFixed("-4503599627370496"), doubleFixed("4503599627370495"));
+                EXPECT_EQ((-2) - doubleFixed("-4503599627370492"), doubleFixed("4503599627370490"));
+            
+                EXPECT_EQ((-4503599627370495) - doubleFixed("-1"), doubleFixed("-4503599627370494"));
+                EXPECT_EQ((-4503599627370492) - doubleFixed("-2"), doubleFixed("-4503599627370490"));
+                EXPECT_EQ(1 - doubleFixed("4503599627370495"), doubleFixed("-4503599627370494"));
+                EXPECT_EQ(2 - doubleFixed("4503599627370492"), doubleFixed("-4503599627370490"));
+            
+                EXPECT_EQ((-4503599627370496) - doubleFixed("-1"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((-4503599627370496) - doubleFixed("-2"), doubleFixed("-4503599627370494"));
+            
+                EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370496"), doubleFixed("0"));
+                EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370495"), doubleFixed("-1"));
+                EXPECT_EQ((-4503599627370496) - doubleFixed("-4503599627370400"), doubleFixed("-96"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+                
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((-8388609) - fixed("1"), ".*");
+                EXPECT_DEATH((-8388610) - fixed("4"), ".*");
+                EXPECT_DEATH((-8388609) - fixed("12312"), ".*");
+                EXPECT_DEATH((-8388610) - fixed("422"), ".*");
+            
+                EXPECT_DEATH((-8388609) - fixed("0"), ".*");
+                EXPECT_DEATH((-8388609) - fixed("0"), ".*");
+                EXPECT_DEATH((-8388610) - fixed("0"), ".*");
+                EXPECT_DEATH((-8388609) - fixed("0"), ".*");
+                EXPECT_DEATH((-8388610) - fixed("0"), ".*");
+
+                EXPECT_DEATH((-8388610) - fixed("-1"), ".*");
+                EXPECT_DEATH((-83886011) - fixed("-2"), ".*");
+
+                EXPECT_EQ((-8388609) - fixed("-1"), fixed("-8388608"));
+                EXPECT_EQ((-8388610) - fixed("-2"), fixed("-8388608"));
+                EXPECT_EQ((-8388610) - fixed("-3"), fixed("-8388607"));
+            
+                EXPECT_EQ((-8388609) - fixed("-8388607"), fixed("-2"));
+                EXPECT_EQ((-8388610) - fixed("-8388607"), fixed("-3"));
+                EXPECT_EQ((-8388608) - fixed("-8300000"), fixed("-88608"));
+
+                EXPECT_DEATH((-1621777214) - fixed("-8388606"), ".*");
+                EXPECT_DEATH((-16777215) - fixed("-8388606"), ".*");
+                EXPECT_DEATH((-16777216) - fixed("-8388607"), ".*");
+                EXPECT_EQ((-16777215) - fixed("-8388607"), fixed("-8388608"));
+                EXPECT_EQ((-16777214) - fixed("-8388606"), fixed("-8388608"));
+                EXPECT_EQ((-16777213) - fixed("-8388605"), fixed("-8388608"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH((-4503599627370500) - doubleFixed("0"), ".*");
+                EXPECT_DEATH((-4503599627370497) - doubleFixed("1"), ".*");
+                EXPECT_DEATH((-4503599627370498) - doubleFixed("4"), ".*");
+                EXPECT_DEATH((-4503599627370530) - doubleFixed("12312"), ".*");
+            
+                EXPECT_DEATH((-4503599627370497) - doubleFixed("0"), ".*");
+                EXPECT_DEATH((-4503599627370500) - doubleFixed("0"), ".*");
+                EXPECT_DEATH((-4503599627370530) - doubleFixed("0"), ".*");
+            
+                EXPECT_DEATH((-4503599627370530) - doubleFixed("-1"), ".*");
+                EXPECT_DEATH((-45035996273705001) - doubleFixed("-2"), ".*");
+                EXPECT_DEATH((-4503599627370500) - doubleFixed("-3"), ".*");
+
+                EXPECT_EQ((-4503599627370500) - doubleFixed("-4"), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((-4503599627370498) - doubleFixed("-3"), doubleFixed("-4503599627370495"));
+            
+                EXPECT_DEATH((-900713499254740991) - doubleFixed("-4503599627370496"), ".*");
+                EXPECT_DEATH((-9007199254740993) - doubleFixed("-4503599627370496"), ".*");
+                EXPECT_DEATH((-9007199254740992) - doubleFixed("-4503599627370495"), ".*");
+                EXPECT_EQ((-4503599627370497) - doubleFixed("-4503599627370496"), doubleFixed("-1"));
+                EXPECT_EQ((-4503599627370500) - doubleFixed("-4503599627370496"), doubleFixed("-4"));
+                EXPECT_EQ((-9007199254740992) - doubleFixed("-4503599627370496"), doubleFixed("-4503599627370496"));
+                EXPECT_EQ((-9007199254740991) - doubleFixed("-4503599627370496"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((-9007199254740990) - doubleFixed("-4503599627370495"), doubleFixed("-4503599627370495"));
+                EXPECT_EQ((-9007199254740989) - doubleFixed("-4503599627370494"), doubleFixed("-4503599627370495"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterThanBoundsRhsCustomMaxed) {
+                #if DEBUGGING
+                EXPECT_DEATH((-10) - (FixedPoint<int8,7, true>("0")), ".*");
+                EXPECT_DEATH((-11) - (FixedPoint<int8,7, true>("0")), ".*");
+                EXPECT_DEATH((-2) - (FixedPoint<int8,7, true>("-0.9")), ".*");
+                EXPECT_DEATH((-5) - (FixedPoint<int8,7, true>("-0.9")), ".*");
+
+                EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("0")), (FixedPoint<int8,7, true>("-1")));
+                EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.78125")), (FixedPoint<int8,7, true>("-0.21875")));
+                EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.5")), (FixedPoint<int8,7, true>("-0.5")));
+                EXPECT_EQ((-1) - (FixedPoint<int8,7, true>("-0.0078125")), (FixedPoint<int8,7, true>("-0.9921875")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionGreaterUnsignedNegativeRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("4.3")), ".*");
+                EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("234234.3")), ".*");  
+                EXPECT_DEATH((-4194604) - (FixedPoint<uint32, 10, true>("0")), ".*");
+                EXPECT_DEATH((-4194304) - (FixedPoint<uint32, 10, true>("0")), ".*");
+
+                EXPECT_EQ((4194303) - (FixedPoint<uint32, 10, true>("0")), (FixedPoint<uint32, 10, true>("4194303")));
+                EXPECT_EQ((4194303) - (FixedPoint<uint32, 10, true>("3000")), (FixedPoint<uint32, 10, true>("4191303")));
+                EXPECT_EQ((853982) - (FixedPoint<uint32, 10, true>("853981.5")), (FixedPoint<uint32, 10, true>("0.5")));
+                EXPECT_EQ((2) - (FixedPoint<uint32, 10, true>("1.25")), (FixedPoint<uint32, 10, true>("0.75")));
+                #endif
+                EXPECT_TRUE(true);
+            }
+                
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionLesserThanBoundRhs) {
+                #if DEBUGGING
+                EXPECT_DEATH(8388609 - fixed("-1"), ".*");
+                EXPECT_DEATH(8388610 - fixed("-4"), ".*");
+                EXPECT_DEATH(8388609 - fixed("-12312"), ".*");
+                EXPECT_DEATH(8388610 - fixed("-422"), ".*");
+
+                EXPECT_DEATH(8388609 - fixed("0"), ".*");
+                EXPECT_DEATH(8388610 - fixed("0"), ".*");
+                EXPECT_DEATH(8388609 - fixed("0"), ".*");
+                EXPECT_DEATH(8388610 - fixed("0"), ".*");
+
+                EXPECT_DEATH(8388611 - fixed("2"), ".*");
+                EXPECT_DEATH(8388610 - fixed("1"), ".*");
+                EXPECT_EQ(8388610 - fixed("3"), fixed("8388607"));
+                EXPECT_EQ(8388611 - fixed("4"), fixed("8388607"));
+
+                EXPECT_EQ(8388609 - fixed("8388607"), fixed("2"));
+                EXPECT_EQ(8388610 - fixed("8388607"), fixed("3"));
+                EXPECT_EQ(8388608 - fixed("8300000"), fixed("88608"));
+
+                EXPECT_DEATH(996777215 - fixed("838000"), ".*");
+                EXPECT_DEATH(16777215 - fixed("8388606"), ".*");
+                EXPECT_DEATH(16777216 - fixed("8388607"), ".*");
+                EXPECT_EQ(16777214 - fixed("8388607"), fixed("8388607"));
+                EXPECT_EQ(16777213 - fixed("8388606"), fixed("8388607"));
+                EXPECT_EQ(16777212 - fixed("8388605"), fixed("8388607"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+                
+            TEST(FixedPointArithmetic, IntegerInverseSubtractionLesserThanBoundsRhsDouble) {
+                #if DEBUGGING
+                EXPECT_DEATH(4503599627370500 - doubleFixed("-0"), ".*");
+                EXPECT_DEATH(4503599627370497 - doubleFixed("-1"), ".*");
+                EXPECT_DEATH(4503599627370498 - doubleFixed("-4"), ".*");
+                EXPECT_DEATH(4503599627370530 - doubleFixed("-12312"), ".*");
+                EXPECT_DEATH(4503599627370496 - doubleFixed("-422"), ".*");
+            
+                EXPECT_DEATH(4503599627370497 - doubleFixed("0"), ".*");
+                EXPECT_DEATH(4503599627370500 - doubleFixed("0"), ".*");
+                EXPECT_DEATH(4503599627370530 - doubleFixed("0"), ".*");
+                EXPECT_DEATH(4503599627370498 - doubleFixed("0"), ".*");
+            
+                EXPECT_DEATH(4503599627370530 - doubleFixed("1"), ".*");
+                EXPECT_DEATH(4503599627370499 - doubleFixed("2"), ".*");
+                EXPECT_EQ(4503599627370496 - doubleFixed("1"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(4503599627370496 - doubleFixed("2"), doubleFixed("4503599627370494"));
+                EXPECT_EQ(4503599627370498 - doubleFixed("3"), doubleFixed("4503599627370495"));
+            
+                EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370495"), doubleFixed("1"));
+                EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370494"), doubleFixed("2"));
+                EXPECT_EQ(4503599627370496 - doubleFixed("4503599627370400"), doubleFixed("96"));
+            
+                EXPECT_DEATH(900713499254740995 - doubleFixed("4503599627370493"), ".*");
+                EXPECT_DEATH(9007199254740994 - doubleFixed("4503599627370494"), ".*");
+                EXPECT_DEATH(9007199254740993 - doubleFixed("4503599627370495"), ".*");
+                EXPECT_EQ(9007199254740990 - doubleFixed("4503599627370495"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(9007199254740989 - doubleFixed("4503599627370494"), doubleFixed("4503599627370495"));
+                EXPECT_EQ(9007199254740988 - doubleFixed("4503599627370493"), doubleFixed("4503599627370495"));
+                #endif
+                EXPECT_TRUE(true);
+            }
+            
+            TEST(FixedPointArithmetic, IntegerInverseLesserUnsignedNegativeRhs) {
             #if DEBUGGING
             EXPECT_DEATH(5 - (FixedPoint<uint32, 10, true>("5.25")), ".*");
             EXPECT_DEATH(1 - (FixedPoint<uint32, 10, true>("1.123123")), ".*");
@@ -2571,6 +3229,8 @@
             EXPECT_DEATH(int16(32767) - (FixedPoint<uint32, 10, true>("32768")), ".*");
         
             EXPECT_DEATH((-1) - (FixedPoint<uint32, 10, true>("0")), ".*");
+            EXPECT_DEATH((-1) - (FixedPoint<uint32, 10, true>("40")), ".*");
+            EXPECT_DEATH((-5) - (FixedPoint<uint32, 10, true>("1")), ".*");
             EXPECT_DEATH(0 - (FixedPoint<uint32, 10, true>("1")), ".*");
             EXPECT_DEATH(154 - (FixedPoint<uint32, 10, true>("155")),".*");
             EXPECT_DEATH(int16(32767) - (FixedPoint<uint32, 10, true>("32768")),".*");
@@ -2583,12 +3243,22 @@
         
             EXPECT_TRUE(true);
         }
+        #pragma endregion
+    
+        #pragma region Multiplication
+        #pragma endregion
+
+        #pragma region Division
+        #pragma endregion
+
     #pragma endregion
+    
     #pragma region Fixed point operations
     #pragma endregion
 
     // Division for fixed point numbers 
     #pragma region Complex Division
+    #pragma endregion
 #pragma endregion
 
 
