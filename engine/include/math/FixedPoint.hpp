@@ -1073,7 +1073,10 @@ public:
             constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator/(const Base2 rhs) const {
                 ASSERT_LOG(rhs != 0, "In Operation [" << toString().c_str() << "/" << rhs << "] a divide by zero has been attempted");
                 if constexpr (!m_isSigned) {
-                    FLOW_ASSERT(std::cmp_greater(rhs, 0) , "Operation [" << toString().c_str() << "/" << rhs << "] would cause and underflow as the value reaches below 0");
+                    FLOW_ASSERT(std::cmp_greater(rhs, 0), "Operation [" << toString().c_str() << "/" << rhs << "] would cause an underflow as the resulting value reaches below [0]");
+                }
+                else {
+                    FLOW_ASSERT(std::cmp_not_equal(rhs,-1) || std::cmp_not_equal(m_baseInt, std::numeric_limits<Base>::min()), "Operation [" << toString().c_str() << "/" << rhs << "] would cause an overflow as the resulting value reaches above [" << getMinValue() << "]");
                 }
 
                 return FixedPoint<Base,DecimalBits,FlowGuard>(m_baseInt / rhs, true);
@@ -1120,23 +1123,7 @@ public:
         #pragma endregion
 
         #pragma region FixedPoint Arithmetic
-            
         #pragma endregion
-        // FixedPoint<Base,DecimalBits,FlowGuard> operator*(FixedPoint<Base,DecimalBits,FlowGuard> rhs) const {
-        //     return (rhs.m_baseInt * m_baseInt) << DecimalBits;
-        // } 
-
-        // friend FixedPoint<Base,DecimalBits,FlowGuard> operator*(Base lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
-        //     return (lhs << DecimalBits) / rhs.m_baseInt;
-        // }
-
-        // FixedPoint<Base,DecimalBits,FlowGuard> operator/(FixedPoint<Base,DecimalBits,FlowGuard> rhs) const {
-        //     return (rhs.m_baseInt * m_baseInt) << DecimalBits;
-        // } 
-
-        // friend FixedPoint<Base,DecimalBits,FlowGuard> operator/(Base lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
-        //     return (lhs << DecimalBits) / rhs.m_baseInt;
-        // }
     
     #pragma endregion
 

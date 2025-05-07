@@ -3746,15 +3746,25 @@ GTEST_FLAG_SET(death_test_style, "threadsafe");
             }
 
             TEST(FixedPointArithmetic, IntegerMultiplicationTestRadianEdgeCases) {
-                #if DEBUGGING
+                EXPECT_EQ(radian("0") * 234234, radian("0"));
+                EXPECT_EQ(radian("0") * -213234234, radian("0"));
 
-                #endif
-                EXPECT_TRUE(true);
-            }
+                EXPECT_EQ(radian("0.5") * 4, radian("0"));
+                EXPECT_EQ(radian("0.5") * -4, radian("0"));
 
-            TEST(FixedPointArithmetic, IntegerMultiplicationTestDifferentTypesEdgeCases) {
-                #if DEBUGGING
-                #endif
+                EXPECT_EQ(radian("0.25") * 4, radian("1"));
+                EXPECT_EQ(radian("0.25") * -4, radian("1"));
+                
+                EXPECT_EQ(radian("0.000030517578125") * 65535, radian("1.999969482421875"));
+                EXPECT_EQ(radian("0.000030517578125") * -65535, radian("0.000030517578125"));
+
+                EXPECT_EQ(radian("1.5") * 8, radian("0"));
+                EXPECT_EQ(radian("1.5") * 9, radian("1.5"));
+                EXPECT_EQ(radian("1.5") * -9, radian("0.5"));
+
+                EXPECT_EQ(radian("1.999969482421875") * -1, radian("0.000030517578125"));
+                EXPECT_EQ(radian("1.999969482421875") * 1, radian("1.999969482421875"));
+                
                 EXPECT_TRUE(true);
             }
 
@@ -3764,20 +3774,268 @@ GTEST_FLAG_SET(death_test_style, "threadsafe");
                 EXPECT_TRUE(true);
             }
 
-            TEST(FixedPointArithmetic, IntegerMultiplicationTestRadianDifferentTypesEdgeCase) {
+            TEST(FixedPointArithmetic, IntegerMultiplicationTestEdgeCasesDifferentTypes) {
                 #if DEBUGGING
+                GTEST_FLAG_SET(death_test_style, "threadsafe");
+                EXPECT_EQ(fixed("0") * uint64(8382388728608), fixed("0"));
+                EXPECT_EQ(fixed("0") * uint8(23), fixed("0"));
+            
+                EXPECT_EQ(fixed("8388607") * uint8(0), fixed("0"));
+                EXPECT_EQ(fixed("8388607.99609375") * uint8(0), fixed("0"));
+            
+                EXPECT_DEATH(fixed("0.00390625") * uint32(2147483648), ".*");
+            
+                EXPECT_EQ(fixed("0.00390625") * uint32(2147483647), fixed("8388607.99609375"));
+            
+                EXPECT_DEATH(fixed("0.5") * uint32(16777216), ".*");
+            
+                EXPECT_EQ(fixed("0.5") * uint32(16777215), fixed("8388607.5"));
+            
+                EXPECT_DEATH(fixed("1") * uint32(8388608), ".*");
+                EXPECT_DEATH(fixed("1") * uint32(8388608), ".*");
+            
+                EXPECT_EQ(fixed("8388607.99609375") * uint8(1), fixed("8388607.99609375"));
+                EXPECT_EQ(fixed("1") * uint32(8388607), fixed("8388607"));
+            
+                EXPECT_DEATH(fixed("8388607") * uint8(2), ".*");
+                EXPECT_DEATH(fixed("2") * uint32(8388608), ".*");
+            
+                EXPECT_DEATH(fixed("4194304") * uint8(2), ".*");
+                EXPECT_DEATH(fixed("2") * uint32(4194304), ".*");
+            
+                EXPECT_EQ(fixed("4194303.99609375") * uint8(2), fixed("8388607.9921875"));
+                EXPECT_EQ(fixed("2") * uint32(4194303), fixed("8388606"));
                 #endif
-                EXPECT_TRUE(true);
             }
-
-            // Same logic so no extensive testing needed
-
-            TEST(FixedPointArithmetic, IntegerMultiplicationInverse) { 
-
+            
+            TEST(FixedPointArithmetic, IntegerMultiplicationTestDoubleEdgeCasesDifferentTypes) {
+                #if DEBUGGING
+                GTEST_FLAG_SET(death_test_style, "threadsafe");
+                
+                // Testing multiplication by zero
+                EXPECT_EQ(doubleFixed("0") * uint64(9007199254740991), doubleFixed("0"));
+                EXPECT_EQ(doubleFixed("0") * uint8(23), doubleFixed("0"));
+            
+                EXPECT_EQ(doubleFixed("4503599627370495") * uint8(0), doubleFixed("0"));
+                EXPECT_EQ(doubleFixed("4503599627370495.99951171875") * uint8(0), doubleFixed("0"));
+            
+                // Testing -0.5 * large integers (near max range)
+                EXPECT_DEATH(doubleFixed("0.5") * uint64(9007199254740992), ".*");
+            
+                EXPECT_EQ(doubleFixed("0.5") * uint64(9007199254740991), doubleFixed("4503599627370495.5"));
+            
+                // Testing multiplication by 1
+                EXPECT_DEATH(doubleFixed("1") * uint64(4503599627370496), ".*");
+                EXPECT_DEATH(doubleFixed("1") * uint64(4503599627370496), ".*");
+            
+                EXPECT_EQ(doubleFixed("4503599627370495.99951171875") * uint8(1), doubleFixed("4503599627370495.99951171875"));
+                EXPECT_EQ(doubleFixed("1") * uint64(4503599627370495), doubleFixed("4503599627370495"));
+            
+                // Testing multiplication by 2
+                EXPECT_DEATH(doubleFixed("2251799813685248") * uint8(2), ".*");
+                EXPECT_DEATH(doubleFixed("2") * uint64(2251799813685248), ".*");
+            
+                EXPECT_DEATH(doubleFixed("2251799813685248") * uint8(2), ".*");
+                EXPECT_DEATH(doubleFixed("2") * uint64(2251799813685248), ".*");
+            
+                EXPECT_EQ(doubleFixed("2251799813685247.99951171875") * uint8(2), doubleFixed("4503599627370495.9990234375"));
+                EXPECT_EQ(doubleFixed("2") * uint64(2251799813685247), doubleFixed("4503599627370494"));
+                #endif
             }
+            
+            TEST(FixedPointArithmetic, IntegerMultiplicationTestRadianEdgeCasesDifferentTypes) {
+                EXPECT_EQ(radian("0") * uint32(234234), radian("0"));
+            
+                EXPECT_EQ(radian("0.5") * uint8(4), radian("0"));
+            
+                EXPECT_EQ(radian("0.25") * uint8(4), radian("1"));
+                
+                EXPECT_EQ(radian("0.000030517578125") * uint16(65535), radian("1.999969482421875"));
+            
+                EXPECT_EQ(radian("1.5") * uint8(8), radian("0"));
+                EXPECT_EQ(radian("1.5") * uint8(9), radian("1.5"));
+            
+                EXPECT_EQ(radian("1.999969482421875") * uint8(1), radian("1.999969482421875"));
+            }
+            // Same logic on inverse so no testing needed
         #pragma endregion
 
         #pragma region Division
+        TEST(FixedPointArithmetic, IntegerDivisionUnderflowChecksDifferentTypes) {
+            #if DEBUGGING
+            // Test for unsigned fixed point types with negative divisors
+            // This should trigger the underflow assertion: FLOW_ASSERT(std::cmp_greater(rhs, 0))
+            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") / -1), ".*");
+            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0") / -1), ".*");
+            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1000") / -5), ".*");
+            EXPECT_DEATH((FixedPoint<uint32, 10, true>("0.1") / -2), ".*");
+            EXPECT_DEATH((FixedPoint<uint16, 8, true>("1") / -1), ".*");
+            EXPECT_DEATH((FixedPoint<uint8, 4, true>("10") / -10), ".*");
+            
+            // Test for unsigned fixed point with zero divisor (should fail with divide by zero)
+            EXPECT_DEATH((FixedPoint<uint32, 10, true>("1") / 0), ".*");
+            EXPECT_DEATH((FixedPoint<uint16, 8, true>("1") / 0), ".*");
+            EXPECT_DEATH((FixedPoint<uint8, 4, true>("1") / 0), ".*");
+            
+            // Valid cases for unsigned fixed point (positive divisors)
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") / 1), (FixedPoint<uint32, 10, true>("1")));
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("10") / 2), (FixedPoint<uint32, 10, true>("5")));
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") / 2), (FixedPoint<uint32, 10, true>("0.5")));
+            EXPECT_EQ((FixedPoint<uint16, 8, true>("16") / 4), (FixedPoint<uint16, 8, true>("4")));
+            EXPECT_EQ((FixedPoint<uint8, 4, true>("8") / 8), (FixedPoint<uint8, 4, true>("1")));
+            
+            // Test with unsigned integers as divisors
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") / uint8(1)), (FixedPoint<uint32, 10, true>("1")));
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("10") / uint8(2)), (FixedPoint<uint32, 10, true>("5")));
+            EXPECT_EQ((FixedPoint<uint32, 10, true>("1") / uint8(2)), (FixedPoint<uint32, 10, true>("0.5")));
+            EXPECT_EQ((FixedPoint<uint16, 8, true>("16") / uint8(4)), (FixedPoint<uint16, 8, true>("4")));
+            EXPECT_EQ((FixedPoint<uint8, 4, true>("8") / uint8(8)), (FixedPoint<uint8, 4, true>("1")));
+            #endif
+        }
+        
+        TEST(FixedPointArithmetic, IntegerDivisionOverflowChecksDifferentTypes) {
+            #if DEBUGGING
+            // Test for signed fixed point with INT_MIN / -1 (should overflow)
+            // This should trigger the overflow assertion: FLOW_ASSERT(std::cmp_not_equal(rhs,-1) || std::cmp_not_equal(m_baseInt, std::numeric_limits<Base>()))
+            
+            // For fixed (24.8 format)
+            EXPECT_DEATH(fixed("-8388608") / -1, ".*");  // Minimum value is -8388608
+            
+            // For doubleFixed (52.12 format)
+            EXPECT_DEATH(doubleFixed("-4503599627370496") / -1, ".*");  // Minimum value for doubleFixed
+            
+            // Test with various fixed point types with minimum value
+            EXPECT_DEATH((FixedPoint<int32, 16, true>("-32768") / -1), ".*");
+            EXPECT_DEATH((FixedPoint<int16, 8, true>("-128") / -1), ".*");
+            EXPECT_DEATH((FixedPoint<int8, 4, true>("-8") / -1), ".*");
+            
+            // Test for exactly the edge case: minimum value divided by -1
+            // Create instances with exact minimum values
+            EXPECT_DEATH(fixed::getMinValue() / -1, ".*");
+            
+            // Corner case: INT_MIN+1 / -1 should work fine (no overflow)
+            // This should equal -(INT_MIN+1) which is INT_MAX
+            EXPECT_EQ((fixed::getMinValue() + 1) / -1, fixed::getMaxValue());
+            
+            // Test divide by zero
+            EXPECT_DEATH(fixed("1") / 0, ".*");
+            EXPECT_DEATH(fixed("-1") / 0, ".*");
+            EXPECT_DEATH(doubleFixed("1") / 0, ".*");
+            EXPECT_DEATH(doubleFixed("-1") / 0, ".*");
+            
+            // Valid cases (shouldn't trigger any assertions)
+            EXPECT_EQ(fixed("-8388607") / -1, fixed("8388607"));
+            EXPECT_EQ(fixed("8388607") / -1, fixed("-8388607"));
+            EXPECT_EQ(fixed("-1") / -1, fixed("1"));
+            EXPECT_EQ(fixed("-1") / 1, fixed("-1"));
+            
+            EXPECT_EQ(doubleFixed("-4503599627370495") / -1, doubleFixed("4503599627370495"));
+            EXPECT_EQ(doubleFixed("4503599627370495") / -1, doubleFixed("-4503599627370495"));
+            EXPECT_EQ(doubleFixed("-1") / -1, doubleFixed("1"));
+            EXPECT_EQ(doubleFixed("-1") / 1, doubleFixed("-1"));
+            #endif
+            
+        }
+        
+        TEST(FixedPointArithmetic, IntegerDivisionMixedTypesTestsDifferentTypes) {
+            #if DEBUGGING
+            // Test with various integer types as divisors
+            
+            // With fixed (24.8 format)
+            EXPECT_EQ(fixed("100") / int8_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / int16_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / int32_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / int64_t(5), fixed("20"));
+            
+            // With unsigned divisors
+            EXPECT_EQ(fixed("100") / uint8_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / uint16_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / uint32_t(5), fixed("20"));
+            EXPECT_EQ(fixed("100") / uint64_t(5), fixed("20"));
+            
+            // With negative fixed point values
+            EXPECT_EQ(fixed("-100") / int8_t(5), fixed("-20"));
+            EXPECT_EQ(fixed("-100") / int16_t(5), fixed("-20"));
+            EXPECT_EQ(fixed("-100") / int32_t(5), fixed("-20"));
+            EXPECT_EQ(fixed("-100") / int64_t(5), fixed("-20"));
+            
+            // With negative divisors
+            EXPECT_EQ(fixed("100") / int8_t(-5), fixed("-20"));
+            EXPECT_EQ(fixed("100") / int16_t(-5), fixed("-20"));
+            EXPECT_EQ(fixed("100") / int32_t(-5), fixed("-20"));
+            EXPECT_EQ(fixed("100") / int64_t(-5), fixed("-20"));
+            
+            // With negative values and negative divisors
+            EXPECT_EQ(fixed("-100") / int8_t(-5), fixed("20"));
+            EXPECT_EQ(fixed("-100") / int16_t(-5), fixed("20"));
+            EXPECT_EQ(fixed("-100") / int32_t(-5), fixed("20"));
+            EXPECT_EQ(fixed("-100") / int64_t(-5), fixed("20"));
+            
+            // With doubleFixed (52.12 format)
+            EXPECT_EQ(doubleFixed("100") / int8_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / int16_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / int32_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / int64_t(5), doubleFixed("20"));
+            
+            // With unsigned divisors and doubleFixed
+            EXPECT_EQ(doubleFixed("100") / uint8_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / uint16_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / uint32_t(5), doubleFixed("20"));
+            EXPECT_EQ(doubleFixed("100") / uint64_t(5), doubleFixed("20"));
+            
+            // Test with boundary values for different integer types
+            
+            // int8_t boundary (-128 to 127)
+            EXPECT_EQ(fixed("100") / int8_t(127), fixed("0.7874"));  // Approximate
+            EXPECT_EQ(fixed("-100") / int8_t(-128), fixed("0.78125"));  // Exact
+            
+            // int16_t boundary (-32768 to 32767)
+            EXPECT_EQ(fixed("100") / int16_t(32767), fixed("0.00305")); // Approximate
+            EXPECT_EQ(fixed("-100") / int16_t(-32768), fixed("0.00305")); // Approximate
+            
+            // uint8_t boundary (0 to 255)
+            EXPECT_EQ(fixed("100") / uint8_t(255), fixed("0.3922")); // Approximate
+            
+            // uint16_t boundary (0 to 65535)
+            EXPECT_EQ(fixed("100") / uint16_t(65535), fixed("0.00153")); // Approximate
+            
+            // Test for correct Integer division
+            EXPECT_EQ(fixed("10") / 3, fixed("3.33333333")); // Approximate
+            EXPECT_EQ(fixed("10") / -3, fixed("-3.33333333")); // Approximate
+            EXPECT_EQ(doubleFixed("10") / 3, doubleFixed("3.33333333333333")); // More precise
+            #endif
+        }
+        
+        // Tests specifically for radian division where we need to handle angle wraparound
+        TEST(FixedPointArithmetic, RadianDivisionEdgeCasesDifferentTypes) {
+            // These tests assume radian is a fixed point type that might implement
+            // special angle-specific behavior like wrapping around at 2π
+            
+            // Test division by various values
+            EXPECT_EQ(radian("1.5") / 1, radian("1.5"));
+            EXPECT_EQ(radian("1.5") / -1, radian("0.5"));
+            EXPECT_EQ(radian("1.5") / 2, radian("0.75"));
+            EXPECT_EQ(radian("1.5") / -2, radian("1.25"));
+            EXPECT_EQ(radian("1.5") / 3, radian("0.5"));
+            EXPECT_EQ(radian("1.5") / -3, radian("1.5"));
+            EXPECT_EQ(radian("1.5") / 4, radian("0.375"));
+            EXPECT_EQ(radian("1.5") / -4, radian("1.625"));
+            
+            // Test with unsigned divisors
+            EXPECT_EQ(radian("1.5") / uint8_t(1), radian("1.5"));
+            EXPECT_EQ(radian("1.5") / uint8_t(2), radian("0.75"));
+            EXPECT_EQ(radian("1.5") / uint8_t(3), radian("0.5"));
+            EXPECT_EQ(radian("1.5") / uint8_t(4), radian("0.375"));
+            
+            // Test with small angles
+            EXPECT_EQ(radian("0.125") / 2, radian("0.0625"));
+            EXPECT_EQ(radian("0.125") / uint8_t(2), radian("0.0625"));
+            
+            
+            // Division by zero should still fail
+            EXPECT_DEATH(radian("1") / 0, ".*");
+            EXPECT_DEATH(radian("1.5") / 0, ".*");
+        }
         #pragma endregion
 
     #pragma endregion
