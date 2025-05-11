@@ -37,21 +37,21 @@ When an arithmetic operation is had between a FixedPoint number and an integer, 
 
 When an arithmetic operation is had between two FixedPoint numbers ...
 - If both FixedPoint numbers are have the same type, the result is the same type 
-    // Since both FixedPoint numbers are the same, the result is the 
-    FixedPoint<uint32,8, false> example = FixedPoint<uint32,8, false>("1") + FixedPoint<uint32,8, false>("1");
+        // Since both FixedPoint numbers are the same, the result is the 
+        FixedPoint<uint32,8, false> example = FixedPoint<uint32,8, false>("1") + FixedPoint<uint32,8, false>("1");
 - If one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type
-    // The integer max of left hand side is 4294967295 and the integer right hand side' integer max is 2147483647
-    // 4294967295 > 2147483647 thus the left hand side's type is the result type
-    FixedPoint<uint64,32,false> example = FixedPoint<uint64,32,false>("1") + FixedPoint<int64,32,true>("1");
+        // The integer max of left hand side is 4294967295 and the integer right hand side' integer max is 2147483647
+        // 4294967295 > 2147483647 thus the left hand side's type is the result type
+        FixedPoint<uint64,32,false> example = FixedPoint<uint64,32,false>("1") + FixedPoint<int64,32,true>("1");
 - Otherwise, if one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type
-    // The left hand side has 9 DecimalBits while the right has 1
-    // Thus the left hand side's type is the result type
-    FixedPoint<int8,1,true> example = FixedPoint<int16,9,true>("1") + FixedPoint<int8,1,true>("1");
+        // The left hand side has 9 DecimalBits while the right has 1
+        // Thus the left hand side's type is the result type
+        FixedPoint<int8,1,true> example = FixedPoint<int16,9,true>("1") + FixedPoint<int8,1,true>("1");
 - Otherwise, if one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type (This is honestly kind of made redundant by the previous rules, in here just in case)
 - Otherwise, if one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard with FlowGuard
-    // The right hand side has FlowGuard and the left hand side does not
-    // Thus the right hand side's type is the result type
-    FixedPoint<uint8,1,true> example = FixedPoint<uint8,1,false>("1") + FixedPoint<uint8,1,true>("1");
+        // The right hand side has FlowGuard and the left hand side does not
+        // Thus the right hand side's type is the result type
+        FixedPoint<uint8,1,true> example = FixedPoint<uint8,1,false>("1") + FixedPoint<uint8,1,true>("1");
 #### Overflow Checking
 As a class based on integers, numbers overflowing in FixedPoint numbers are a more prevalent problem than with floating point numbers.
 In order to counteract this assertions are made that are hit in the case that the build is in debug mode and if an operation would result in an overflowed/underflowed fixed point number.

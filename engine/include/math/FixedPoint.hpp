@@ -20,6 +20,22 @@
 template <Int Base, uint8 DecimalBits, bool FlowGuard = true>
 struct FixedPoint {
 
+private:
+    // Handles promotion order as detailed.
+    // When an arithmetic operation is had between two FixedPoint numbers ...
+    // If both FixedPoint numbers are have the same type, the result is the same type .
+    // Otherwise, if one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
+    // Otherwise, if one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
+    // Otherwise, if one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type (This is honestly kind of made redundant by the previous rules, in here just in case).
+    // Otherwise, if one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard with FlowGuard.
+    template <Int Base, uint8 DecimalBits, bool FlowGuard, Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+    concept ShouldPromote = std::cmp_greater(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max()) // If gr
+        || (std::cmp_equal(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max()) 
+        && (std::cmp_greater(DecimalBits, DecimalBits2) 
+        || (std::cmp_equal(DecimalBits, DecimalBits2)
+        && ((std::is_signed_v<Base>::value() &&  !std::is_signed_v<Base2>::value()))))
+
+
     // Macro meant specifically to enforce flow guard
     // Done so to reduce repetitive !FlowGuard || as a way of making an implies statement 
     // Allows flowguard checks to be filtered out in constexpr time
