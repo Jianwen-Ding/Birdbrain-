@@ -11,6 +11,41 @@
 #include <cstddef>
 #include <algorithm>
 
+#pragma region Promotion Rules
+    // When an arithmetic operation is had between two FixedPoint numbers ...
+    // If both FixedPoint numbers are have the same type, the result is the same type .
+    // Otherwise, if one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
+    // Otherwise, if one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
+    // Otherwise, if one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type 
+    //      (This is honestly kind of made redundant by the previous rules, in here just in case).
+    // Otherwise, if one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard will be the result type.
+
+    // Handles whether a FixedPoint<Base2,DecimalBits2,FlowGuard2> should be promoted to FixedPoint<Base,DecimalBits,FlowGuard>
+    // when those two types have an arithmetic operation together based on previous ordering rules.
+    // This includes two of the same FixedPoint numbers.
+    template <typename Base, uint8 DecimalBits, bool FlowGuard, typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+    concept ShouldPromoteInclusive =
+        std::cmp_greater(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max())  // If one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
+        || (std::cmp_equal(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max()) 
+        && (std::cmp_greater(DecimalBits, DecimalBits2)                                        // If one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
+        || (std::cmp_equal(DecimalBits, DecimalBits2)
+        && ((std::is_signed_v<Base> &&  !std::is_signed_v<Base2>)                              // If one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type
+        || ((std::is_signed_v<Base> == std::is_signed_v<Base2>)
+        && ((FlowGuard && !FlowGuard2)                                                         // If one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard will be the result type.
+        || (FlowGuard == FlowGuard2)))))));                                                    // If all is equal, the types are the same. We count that as a promotion for the purposes of this concept.
+
+    // This excludes two of the same FixedPoint numbers.
+    template <typename Base, uint8 DecimalBits, bool FlowGuard, typename Base2, uint8 DecimalBits2, bool FlowGuard2>
+    concept ShouldPromoteExclusive =
+        std::cmp_greater(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max())  // If one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
+        || (std::cmp_equal(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max()) 
+        && (std::cmp_greater(DecimalBits, DecimalBits2)                                        // If one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
+        || (std::cmp_equal(DecimalBits, DecimalBits2)
+        && ((std::is_signed_v<Base> &&  !std::is_signed_v<Base2>)                              // If one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type
+        || ((std::is_signed_v<Base> == std::is_signed_v<Base2>)
+        && ((FlowGuard && !FlowGuard2)))))));                                                  // If one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard will be the result type.
+#pragma endregion
+
 // This class defines a fixed point number.
 // This takes an integer class and allocates a number of bits to define what is past the decimal mark.
 // Used to allow for decimal math without the cross-platform determinism problems of floating point math. 
@@ -21,28 +56,6 @@ template <Int Base, uint8 DecimalBits, bool FlowGuard = true>
 struct FixedPoint {
 
 private:
-    // Handles whether a FixedPoint<Base2,DecimalBits2,FlowGuard2> should be promoted to FixedPoint<Base,DecimalBits,FlowGuard>
-    // when those two types have an arithmetic operation together.
-    // It handles this according to a set promotion rule.
-    // When an arithmetic operation is had between two FixedPoint numbers ...
-    // If both FixedPoint numbers are have the same type, the result is the same type .
-    // Otherwise, if one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
-    // Otherwise, if one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
-    // Otherwise, if one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type 
-    //      (This is honestly kind of made redundant by the previous rules, in here just in case).
-    // Otherwise, if one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard will be the result type.
-    template <Int Base, uint8 DecimalBits, bool FlowGuard, Int Base2, uint8 DecimalBits2, bool FlowGuard2>
-    concept ShouldPromote =
-        std::cmp_greater(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max())  // If one FixedPoint number has a higher integer max than another, that FixedPoint will be the result type.
-        || (std::cmp_equal(std::numeric_limits<Base>::max(), std::numeric_limits<Base2>::max()) 
-        && (std::cmp_greater(DecimalBits, DecimalBits2)                                        // If one FixedPoint number has more DecimalBits than another, that FixedPoint will be the result type.
-        || (std::cmp_equal(DecimalBits, DecimalBits2)
-        && ((std::is_signed_v<Base> &&  !std::is_signed_v<Base2>)                              // If one FixedPoint number is signed and the other is unsigned, the signed FixedNumber will be the result type
-        || ((std::is_signed_v<Base> == std::is_signed_v<Base2>)
-        && ((FlowGuard && !FlowGuard2)                                                         // If one FixedPoint number has FlowGuard and the other doesn't, the FixedNumber with FlowGuard will be the result type.
-        || (FlowGuard == FlowGuard2)))))));                                                    // If all is equal, the types are the same. We count that as a promotion for the purposes of this concept.
-
-
     // Macro meant specifically to enforce flow guard
     // Done so to reduce repetitive !FlowGuard || as a way of making an implies statement 
     // Allows flowguard checks to be filtered out in constexpr time
@@ -1146,6 +1159,86 @@ public:
         #pragma endregion
 
         #pragma region FixedPoint Arithmetic
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteExclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-(const FixedPoint<Base2,DecimalBits2, FlowGuard2> rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteExclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator*(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteExclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator*(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+            
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator/(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteExclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            friend constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator/(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& lhs, const FixedPoint<Base,DecimalBits,FlowGuard>& rhs) {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            // None of the following needs any unique logic
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator+=(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator-=(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator*=(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator/=(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
+            template <Int Base2, uint8 DecimalBits2, bool FlowGuard2>
+            requires ShouldPromoteInclusive<Base,DecimalBits,FlowGuard,Base2,DecimalBits2,FlowGuard2>
+            constexpr FixedPoint<Base,DecimalBits,FlowGuard> operator=(const FixedPoint<Base2,DecimalBits2, FlowGuard2>& rhs) const {
+                return FixedPoint<Base,DecimalBits,FlowGuard>();
+            }
+
         #pragma endregion
     
     #pragma endregion
