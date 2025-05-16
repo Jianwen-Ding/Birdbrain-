@@ -1,0 +1,3 @@
+[submodule "engine/nu-ecs-prac"]
+	path = engine/nu-ecs-prac
+	url = https://github.com/melodicht/nu-ecs-prac.git
