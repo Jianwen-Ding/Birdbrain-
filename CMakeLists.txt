@@ -13,7 +13,7 @@ set(ENGINE_SRC ${CPP_SOURCES} ${C_SOURCES})
 include(helper.cmake)
 
 # Include directories
-glob_directories(ENGINE_INCLUDE engine/include)
+glob_directories(ENGINE_INCLUDE engine)
 
 # Requires Libraries
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
