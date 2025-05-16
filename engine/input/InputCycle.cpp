@@ -2,3 +2,4 @@
 
 InputCycle::InputCycle() : buttonInputs(), mousePos({0,0}){   
 }
+//wow
