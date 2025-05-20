@@ -12,5 +12,9 @@ add_subdirectory(./core)
 # Combines components together 
 combine_target(${PROJECT_NAME} core/main.cpp "BIRDBRAIN_INTERFACE")
 
+# Adds tests if wanted
 include(CTest)
 add_subdirectory(./tests)
+
+# Adds benchmarks if wanted
+add_subdirectory(./benchmarks)

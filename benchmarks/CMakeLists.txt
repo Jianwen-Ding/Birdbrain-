@@ -9,3 +9,12 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(google_benchmark)
+
+add_library(BENCH_INTERFACE INTERFACE)
+target_link_libraries(
+  BENCH_INTERFACE INTERFACE
+  benchmark::benchmark
+  BIRDBRAIN_INTERFACE)
+
+add_executable (Bench "gbench.cpp")
+target_link_libraries(Bench PRIVATE "BENCH_INTERFACE")
