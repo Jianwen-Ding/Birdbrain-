@@ -1,30 +1,31 @@
-#Testing cmake, included so that it could be easily excluded in build case
+# Testing cmake, made so that it could be easily excluded in build case
 
 include(FetchContent)
-include(GoogleTest)
 
 FetchContent_Declare(
-  googletest
+  google_test
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG        release-1.12.0
 )
-FetchContent_MakeAvailable(googletest)
+FetchContent_MakeAvailable(google_test)
+
+include(GoogleTest)
 
 add_library(TEST_INTERFACE INTERFACE)
 target_link_libraries(
   TEST_INTERFACE INTERFACE
   GTest::gtest_main
-  ENGINE_INTERFACE
+  BIRDBRAIN_INTERFACE
 )
 
 function (gtest_insert test_name test_exec)
   set(FIN_NAME "gtest_${test_name}")
 
-  combine_target(${test_name} ${test_exec} "${ENGINE_SRC}" "${ENGINE_INCLUDE}" "TEST_INTERFACE")
+  combine_target(${test_name} ${test_exec} "TEST_INTERFACE")
 
   gtest_discover_tests(${test_name}
     TEST_PREFIX "${FIN_NAME}_"
-    PROPERTIES TIMEOUT 120  # Optional: set timeout for tests
+    PROPERTIES TIMEOUT 120
   )
 endfunction()
 

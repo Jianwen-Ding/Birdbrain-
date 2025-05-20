@@ -21,8 +21,7 @@ function(glob_directories output_var dir)
 endfunction()
 
 # Function to finalize a target
-function(combine_target target_name main_source engine_sources engine_includes engine_interface)
-    add_executable(${target_name} ${main_source} ${engine_sources})
-    target_include_directories(${target_name} PRIVATE ${engine_includes})
-    target_link_libraries(${target_name} PRIVATE ${engine_interface})
+function(combine_target target_name main_source interface)
+    add_executable(${target_name} ${main_source})
+    target_link_libraries(${target_name} PRIVATE ${interface})
 endfunction()
